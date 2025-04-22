@@ -1,0 +1,12 @@
+/* index.css */
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  color: #213547;
+  background-color: #ffffff;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #f8f8f8;
+}
