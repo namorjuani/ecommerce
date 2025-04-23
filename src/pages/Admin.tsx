@@ -35,8 +35,11 @@ export default function Admin() {
     stock: 1,
     tipo: "producto",
   });
-
   const [productoEditando, setProductoEditando] = useState<Producto | null>(null);
+
+  const [busqueda, setBusqueda] = useState("");
+  const [ordenCampo, setOrdenCampo] = useState("nombre");
+  const [ordenDireccion, setOrdenDireccion] = useState("asc");
 
   useEffect(() => {
     if (!usuario) return;
@@ -93,6 +96,23 @@ export default function Admin() {
     setProductoEditando(null);
   };
 
+  const ordenarProductos = (lista: Producto[], campo: string, direccion: string) => {
+    const sorted = [...lista].sort((a, b) => {
+      if (campo === "nombre") return a.nombre.localeCompare(b.nombre);
+      if (campo === "precio") return a.precio - b.precio;
+      if (campo === "stock") return a.stock - b.stock;
+      return 0;
+    });
+
+    return direccion === "asc" ? sorted : sorted.reverse();
+  };
+
+  const productosFiltrados = productos.filter((p) =>
+    p.nombre.toLowerCase().includes(busqueda.toLowerCase())
+  );
+
+  const productosOrdenados = ordenarProductos(productosFiltrados, ordenCampo, ordenDireccion);
+
   return (
     <div style={{ padding: "2rem", maxWidth: "600px", margin: "auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -102,7 +122,6 @@ export default function Admin() {
         </Link>
       </div>
 
-      {/* Datos generales de la tienda */}
       <label>Nombre de la tienda:</label>
       <input
         type="text"
@@ -137,7 +156,6 @@ export default function Admin() {
         />
       </div>
 
-      {/* Agregar nuevo producto */}
       <hr style={{ margin: "2rem 0" }} />
       <h3>Nuevo producto</h3>
       <input
@@ -176,9 +194,40 @@ export default function Admin() {
       </select>
       <button onClick={guardarProducto}>Guardar producto</button>
 
-      {/* Lista de productos */}
       <h3 style={{ marginTop: "2rem" }}>Tus productos:</h3>
-      {productos.map((p) =>
+
+      <div style={{ marginBottom: "1rem" }}>
+        <input
+          type="text"
+          placeholder="Buscar por nombre..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          style={{ width: "100%", padding: "0.5rem", marginBottom: "1rem" }}
+        />
+
+        <label>Ordenar por:</label>
+        <select
+          value={ordenCampo}
+          onChange={(e) => setOrdenCampo(e.target.value)}
+          style={{ marginLeft: "0.5rem", marginRight: "1rem" }}
+        >
+          <option value="nombre">Nombre</option>
+          <option value="precio">Precio</option>
+          <option value="stock">Stock</option>
+        </select>
+
+        <label>Dirección:</label>
+        <select
+          value={ordenDireccion}
+          onChange={(e) => setOrdenDireccion(e.target.value)}
+          style={{ marginLeft: "0.5rem" }}
+        >
+          <option value="asc">Ascendente ↑</option>
+          <option value="desc">Descendente ↓</option>
+        </select>
+      </div>
+
+      {productosOrdenados.map((p) =>
         productoEditando?.id === p.id ? (
           <div key={p.id} style={{ border: "1px solid #ccc", padding: "1rem", marginBottom: "1rem" }}>
             <input
