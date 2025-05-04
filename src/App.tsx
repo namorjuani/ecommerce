@@ -8,6 +8,7 @@ import Checkout from "./pages/Checkout";
 import { CarritoProvider } from "./context/CarritoContext";
 import { AuthProvider } from "./context/AuthContext";
 import Layout from "./Components/Layout";
+import Pedidos from "./pages/Pedidos";
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/producto/:id" element={<ProductDetail />} />
               <Route path="/checkout" element={<Checkout />} />
+              <Route path="/admin/pedidos" element={<Pedidos />} />
               <Route
                 path="/admin"
                 element={

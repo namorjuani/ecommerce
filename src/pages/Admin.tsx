@@ -10,7 +10,7 @@ import {
   updateDoc,
   getDoc,
   setDoc,
-  addDoc
+  addDoc,
 } from "firebase/firestore";
 
 interface Producto {
@@ -75,7 +75,10 @@ export default function Admin() {
 
       const productosRef = collection(db, "tiendas", usuario.uid, "productos");
       const snapshot = await getDocs(productosRef);
-      const lista = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as Producto[];
+      const lista = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Producto[];
       setProductos(lista);
     };
 
@@ -136,20 +139,31 @@ export default function Admin() {
         <Link to="/">
           <button>Volver a la tienda</button>
         </Link>
+        <Link to="/admin/pedidos">
+          <button>Ver pedidos</button>
+        </Link>
       </div>
 
       <h3>Configuración visual de la tienda</h3>
+      {/* ... Inputs de configuración visual ... */}
       <input placeholder="Logo (URL)" value={logo} onChange={(e) => setLogo(e.target.value)} />
       <input placeholder="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} />
       <textarea placeholder="Descripción" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
       <input placeholder="Imagen principal" value={imagen} onChange={(e) => setImagen(e.target.value)} />
       <input placeholder="Texto hero" value={textoHero} onChange={(e) => setTextoHero(e.target.value)} />
       <input placeholder="WhatsApp" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
-      <label>Color de fondo: <input type="color" value={colorFondo} onChange={(e) => setColorFondo(e.target.value)} /></label>
-      <label>Color de botón: <input type="color" value={colorBoton} onChange={(e) => setColorBoton(e.target.value)} /></label>
+      <label>
+        Color de fondo:{" "}
+        <input type="color" value={colorFondo} onChange={(e) => setColorFondo(e.target.value)} />
+      </label>
+      <label>
+        Color de botón:{" "}
+        <input type="color" value={colorBoton} onChange={(e) => setColorBoton(e.target.value)} />
+      </label>
       <button onClick={guardarConfiguracion}>Guardar configuración</button>
 
       <h3>Agregar producto</h3>
+      {/* ... Inputs de carga de producto ... */}
       <input placeholder="Nombre" value={nuevo.nombre} onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })} />
       <input placeholder="Precio" type="number" value={nuevo.precio} onChange={(e) => setNuevo({ ...nuevo, precio: Number(e.target.value) })} />
       <input placeholder="Imagen" value={nuevo.imagen} onChange={(e) => setNuevo({ ...nuevo, imagen: e.target.value })} />
