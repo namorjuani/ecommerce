@@ -1,0 +1,54 @@
+/* src/css/CarritoLateral.css */
+.carrito-lateral {
+  position: fixed;
+  top: 0;
+  right: -400px;
+  width: 300px;
+  height: 100vh;
+  background-color: white;
+  border-left: 1px solid #ccc;
+  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+  transition: right 0.3s ease;
+  z-index: 999;
+  overflow-y: auto;
+}
+
+.carrito-lateral.abierto {
+  right: 0;
+}
+
+.carrito-lateral .cerrar {
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  float: right;
+}
+
+.carrito-lateral ul {
+  list-style: none;
+  padding: 0;
+}
+
+.carrito-lateral li {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.carrito-lateral img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+}
+
+.carrito-lateral .boton-pagar {
+  width: 100%;
+  padding: 0.8rem;
+  background-color: #3483fa;
+  color: white;
+  border: none;
+  cursor: pointer;
+  margin-top: 1rem;
+  font-size: 1rem;
+}

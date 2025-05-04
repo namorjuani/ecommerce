@@ -1,16 +1,16 @@
+import "./css/Admin.css";
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { Link } from "react-router-dom";
 import { db } from "../firebase";
 import {
   collection,
-  addDoc,
   getDocs,
-  deleteDoc,
   doc,
   updateDoc,
   getDoc,
-  setDoc
+  setDoc,
+  addDoc
 } from "firebase/firestore";
 
 interface Producto {
@@ -20,6 +20,7 @@ interface Producto {
   imagen: string;
   imagenes?: string[];
   descripcion?: string;
+  descripcionCorta?: string;
   cuotas?: string;
   envioGratis?: boolean;
   color?: string;
@@ -30,304 +31,154 @@ interface Producto {
 export default function Admin() {
   const { usuario } = useAuth();
 
-  const [nombre, setNombre] = useState("Mi Tienda");
-  const [descripcion, setDescripcion] = useState("Bienvenidos a mi tienda");
-  const [imagen, setImagen] = useState("https://via.placeholder.com/600x300");
-  const [textoHero, setTextoHero] = useState("¡Bienvenido a nuestra tienda!");
-  const [colorFondo, setColorFondo] = useState("#ffffff");
-  const [colorBoton, setColorBoton] = useState("#000000");
-  const [whatsapp, setWhatsapp] = useState("");
-
   const [productos, setProductos] = useState<Producto[]>([]);
-  const [nuevoProducto, setNuevoProducto] = useState<Producto>({
+  const [nuevo, setNuevo] = useState<Producto>({
     nombre: "",
     precio: 0,
     imagen: "",
     imagenes: [],
     descripcion: "",
+    descripcionCorta: "",
     cuotas: "",
     envioGratis: false,
     color: "",
-    stock: 1,
+    stock: 0,
     tipo: "producto",
   });
-  const [productoEditando, setProductoEditando] = useState<Producto | null>(null);
+
+  const [nombre, setNombre] = useState("");
+  const [descripcion, setDescripcion] = useState("");
+  const [imagen, setImagen] = useState("");
+  const [logo, setLogo] = useState("");
+  const [textoHero, setTextoHero] = useState("");
+  const [colorFondo, setColorFondo] = useState("#ffffff");
+  const [colorBoton, setColorBoton] = useState("#000000");
+  const [whatsapp, setWhatsapp] = useState("");
 
   useEffect(() => {
     if (!usuario) return;
 
-    const cargarProductos = async () => {
-      const ref = collection(db, "tiendas", usuario.uid, "productos");
-      const snapshot = await getDocs(ref);
-      const lista: Producto[] = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...(doc.data() as Producto),
-      }));
-      setProductos(lista);
-
-      const configRef = doc(db, "tiendas", usuario.uid, "configuracion", "estilos");
+    const cargarDatos = async () => {
+      const configRef = doc(db, "tiendas", usuario.uid);
       const configSnap = await getDoc(configRef);
       if (configSnap.exists()) {
         const data = configSnap.data();
-        setTextoHero(data.textoHero || "¡Bienvenido a nuestra tienda!");
+        setNombre(data.nombre || "");
+        setDescripcion(data.descripcion || "");
+        setImagen(data.imagen || "");
+        setLogo(data.logo || "");
+        setTextoHero(data.textoHero || "");
         setColorFondo(data.colorFondo || "#ffffff");
         setColorBoton(data.colorBoton || "#000000");
         setWhatsapp(data.whatsapp || "");
       }
+
+      const productosRef = collection(db, "tiendas", usuario.uid, "productos");
+      const snapshot = await getDocs(productosRef);
+      const lista = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as Producto[];
+      setProductos(lista);
     };
 
-    cargarProductos();
+    cargarDatos();
   }, [usuario]);
 
   const guardarConfiguracion = async () => {
     if (!usuario) return;
-    const ref = doc(db, "tiendas", usuario.uid, "configuracion", "estilos");
-    await setDoc(ref, {
-      textoHero,
-      colorFondo,
-      colorBoton,
-      whatsapp,
-    });
-    alert("Configuración visual guardada");
+    const ref = doc(db, "tiendas", usuario.uid);
+    await setDoc(
+      ref,
+      {
+        nombre,
+        descripcion,
+        imagen,
+        logo,
+        textoHero,
+        colorFondo,
+        colorBoton,
+        whatsapp,
+      },
+      { merge: true }
+    );
+    alert("Configuración guardada");
   };
 
-  const guardarProducto = async () => {
+  const guardarProductoNuevo = async () => {
     if (!usuario) return;
     const ref = collection(db, "tiendas", usuario.uid, "productos");
-    await addDoc(ref, nuevoProducto);
-    setNuevoProducto({
+    await addDoc(ref, nuevo);
+    alert("Producto agregado");
+    setNuevo({
       nombre: "",
-      precio: "",
+      precio: 0,
       imagen: "",
       imagenes: [],
       descripcion: "",
+      descripcionCorta: "",
       cuotas: "",
       envioGratis: false,
       color: "",
-      stock: 1,
+      stock: 0,
       tipo: "producto",
     });
-
-    const snapshot = await getDocs(ref);
-    const lista: Producto[] = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...(doc.data() as Producto),
-    }));
-    setProductos(lista);
   };
 
-  const eliminarProducto = async (id: string) => {
-    if (!usuario) return;
-    const ref = doc(db, "tiendas", usuario.uid, "productos", id);
-    await deleteDoc(ref);
-    setProductos(productos.filter((p) => p.id !== id));
-  };
-
-  const actualizarProducto = async () => {
-    if (!usuario || !productoEditando?.id) return;
-    const ref = doc(db, "tiendas", usuario.uid, "productos", productoEditando.id);
-    await updateDoc(ref, productoEditando);
-    const nuevos = productos.map((p) => (p.id === productoEditando.id ? productoEditando : p));
-    setProductos(nuevos);
-    setProductoEditando(null);
+  const actualizarProducto = async (producto: Producto) => {
+    if (!usuario || !producto.id) return;
+    const ref = doc(db, "tiendas", usuario.uid, "productos", producto.id);
+    await updateDoc(ref, producto);
+    alert("Producto actualizado");
   };
 
   return (
-    <div style={{ padding: "2rem", maxWidth: "600px", margin: "auto" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h2>Panel de edición</h2>
+    <div className="admin-container">
+      <div className="admin-header">
+        <h2>Panel de administración</h2>
         <Link to="/">
           <button>Volver a la tienda</button>
         </Link>
       </div>
 
-      <h3>Configuración visual</h3>
-      <label>Título principal:</label>
-      <input
-        type="text"
-        value={textoHero}
-        onChange={(e) => setTextoHero(e.target.value)}
-        style={{ width: "100%", marginBottom: "0.5rem" }}
-      />
-      <label>WhatsApp:</label>
-      <input
-        type="text"
-        value={whatsapp}
-        onChange={(e) => setWhatsapp(e.target.value)}
-        style={{ width: "100%", marginBottom: "0.5rem" }}
-      />
-      <label>Color de fondo:</label>
-      <input
-        type="color"
-        value={colorFondo}
-        onChange={(e) => setColorFondo(e.target.value)}
-        style={{ width: "100%", marginBottom: "0.5rem" }}
-      />
-      <label>Color de botones:</label>
-      <input
-        type="color"
-        value={colorBoton}
-        onChange={(e) => setColorBoton(e.target.value)}
-        style={{ width: "100%", marginBottom: "1rem" }}
-      />
-      <button onClick={guardarConfiguracion} style={{ marginBottom: "2rem" }}>Guardar configuración</button>
+      <h3>Configuración visual de la tienda</h3>
+      <input placeholder="Logo (URL)" value={logo} onChange={(e) => setLogo(e.target.value)} />
+      <input placeholder="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+      <textarea placeholder="Descripción" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
+      <input placeholder="Imagen principal" value={imagen} onChange={(e) => setImagen(e.target.value)} />
+      <input placeholder="Texto hero" value={textoHero} onChange={(e) => setTextoHero(e.target.value)} />
+      <input placeholder="WhatsApp" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
+      <label>Color de fondo: <input type="color" value={colorFondo} onChange={(e) => setColorFondo(e.target.value)} /></label>
+      <label>Color de botón: <input type="color" value={colorBoton} onChange={(e) => setColorBoton(e.target.value)} /></label>
+      <button onClick={guardarConfiguracion}>Guardar configuración</button>
 
-      <h3>Nuevo producto</h3>
-      <input
-        placeholder="Nombre"
-        value={nuevoProducto.nombre}
-        onChange={(e) => setNuevoProducto({ ...nuevoProducto, nombre: e.target.value })}
-        style={{ width: "100%", marginBottom: "0.5rem" }}
-      />
-      <textarea
-        placeholder="Descripción"
-        value={nuevoProducto.descripcion}
-        onChange={(e) => setNuevoProducto({ ...nuevoProducto, descripcion: e.target.value })}
-        style={{ width: "100%", marginBottom: "0.5rem", height: "60px" }}
-      />
-      <input
-        type="text"
-        placeholder="Imagen principal (URL)"
-        value={nuevoProducto.imagen}
-        onChange={(e) => setNuevoProducto({ ...nuevoProducto, imagen: e.target.value })}
-        style={{ width: "100%", marginBottom: "0.5rem" }}
-      />
-      <input
-        type="text"
-        placeholder="Otras imágenes (separadas por coma)"
-        value={nuevoProducto.imagenes?.join(",") || ""}
-        onChange={(e) => setNuevoProducto({ ...nuevoProducto, imagenes: e.target.value.split(",") })}
-        style={{ width: "100%", marginBottom: "0.5rem" }}
-      />
-      <input
-        type="text"
-        placeholder="Cuotas"
-        value={nuevoProducto.cuotas || ""}
-        onChange={(e) => setNuevoProducto({ ...nuevoProducto, cuotas: e.target.value })}
-        style={{ width: "100%", marginBottom: "0.5rem" }}
-      />
-      <input
-        type="text"
-        placeholder="Color"
-        value={nuevoProducto.color || ""}
-        onChange={(e) => setNuevoProducto({ ...nuevoProducto, color: e.target.value })}
-        style={{ width: "100%", marginBottom: "0.5rem" }}
-      />
-      <label style={{ display: "block", marginBottom: "0.5rem" }}>
-        <input
-          type="checkbox"
-          checked={nuevoProducto.envioGratis || false}
-          onChange={(e) => setNuevoProducto({ ...nuevoProducto, envioGratis: e.target.checked })}
-        /> ¿Envío gratis?
+      <h3>Agregar producto</h3>
+      <input placeholder="Nombre" value={nuevo.nombre} onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })} />
+      <input placeholder="Precio" type="number" value={nuevo.precio} onChange={(e) => setNuevo({ ...nuevo, precio: Number(e.target.value) })} />
+      <input placeholder="Imagen" value={nuevo.imagen} onChange={(e) => setNuevo({ ...nuevo, imagen: e.target.value })} />
+      <input placeholder="Imágenes (separadas por coma)" onChange={(e) => setNuevo({ ...nuevo, imagenes: e.target.value.split(",") })} />
+      <textarea placeholder="Descripción larga" value={nuevo.descripcion} onChange={(e) => setNuevo({ ...nuevo, descripcion: e.target.value })} />
+      <input placeholder="Descripción corta (talle, tamaño...)" value={nuevo.descripcionCorta} onChange={(e) => setNuevo({ ...nuevo, descripcionCorta: e.target.value })} />
+      <input placeholder="Cuotas" value={nuevo.cuotas} onChange={(e) => setNuevo({ ...nuevo, cuotas: e.target.value })} />
+      <label>
+        Envío gratis:
+        <input type="checkbox" checked={nuevo.envioGratis} onChange={(e) => setNuevo({ ...nuevo, envioGratis: e.target.checked })} />
       </label>
-      <input
-        type="number"
-        placeholder="Precio"
-        value={nuevoProducto.precio}
-        onChange={(e) => setNuevoProducto({ ...nuevoProducto, precio: Number(e.target.value) })}
-        style={{ width: "100%", marginBottom: "0.5rem" }}
-      /> 
-      <input
-        type="number"
-        placeholder="Stock"
-        value={nuevoProducto.stock}
-        onChange={(e) => setNuevoProducto({ ...nuevoProducto, stock: Number(e.target.value) })}
-        style={{ width: "100%", marginBottom: "0.5rem" }}
-      />
-      <select
-        value={nuevoProducto.tipo}
-        onChange={(e) => setNuevoProducto({ ...nuevoProducto, tipo: e.target.value as "producto" | "servicio" })}
-        style={{ width: "100%", marginBottom: "1rem" }}
-      >
+      <input placeholder="Color" value={nuevo.color} onChange={(e) => setNuevo({ ...nuevo, color: e.target.value })} />
+      <input placeholder="Stock" type="number" value={nuevo.stock} onChange={(e) => setNuevo({ ...nuevo, stock: Number(e.target.value) })} />
+      <select value={nuevo.tipo} onChange={(e) => setNuevo({ ...nuevo, tipo: e.target.value as "producto" | "servicio" })}>
         <option value="producto">Producto</option>
         <option value="servicio">Servicio</option>
       </select>
-      <button onClick={guardarProducto}>Guardar producto</button>
+      <button onClick={guardarProductoNuevo}>Agregar producto</button>
 
-      <h3 style={{ marginTop: "2rem" }}>Tus productos:</h3>
-      {productos.map((p) =>
-        productoEditando?.id === p.id ? (
-          <div key={p.id} style={{ border: "1px solid #ccc", padding: "1rem", marginBottom: "1rem" }}>
-            <input
-              value={productoEditando.nombre}
-              onChange={(e) => setProductoEditando({ ...productoEditando, nombre: e.target.value })}
-              placeholder="Nombre"
-              style={{ width: "100%", marginBottom: "0.5rem" }}
-            />
-            <textarea
-              value={productoEditando.descripcion}
-              onChange={(e) => setProductoEditando({ ...productoEditando, descripcion: e.target.value })}
-              placeholder="Descripción"
-              style={{ width: "100%", marginBottom: "0.5rem", height: "60px" }}
-            />
-            <input
-              value={productoEditando.imagen}
-              onChange={(e) => setProductoEditando({ ...productoEditando, imagen: e.target.value })}
-              placeholder="Imagen"
-              style={{ width: "100%", marginBottom: "0.5rem" }}
-            />
-            <input
-              value={productoEditando.imagenes?.join(",") || ""}
-              onChange={(e) => setProductoEditando({ ...productoEditando, imagenes: e.target.value.split(",") })}
-              placeholder="Otras imágenes"
-              style={{ width: "100%", marginBottom: "0.5rem" }}
-            />
-            <input
-              value={productoEditando.cuotas || ""}
-              onChange={(e) => setProductoEditando({ ...productoEditando, cuotas: e.target.value })}
-              placeholder="Cuotas"
-              style={{ width: "100%", marginBottom: "0.5rem" }}
-            />
-            <input
-              value={productoEditando.color || ""}
-              onChange={(e) => setProductoEditando({ ...productoEditando, color: e.target.value })}
-              placeholder="Color"
-              style={{ width: "100%", marginBottom: "0.5rem" }}
-            />
-            <label style={{ display: "block", marginBottom: "0.5rem" }}>
-              <input
-                type="checkbox"
-                checked={productoEditando.envioGratis || false}
-                onChange={(e) => setProductoEditando({ ...productoEditando, envioGratis: e.target.checked })}
-              /> ¿Envío gratis?
-            </label>
-            <input
-              type="number"
-              value={productoEditando.precio}
-              onChange={(e) => setProductoEditando({ ...productoEditando, precio: Number(e.target.value) })}
-              placeholder="Precio"
-              style={{ width: "100%", marginBottom: "0.5rem" }}
-            />
-            <input
-              type="number"
-              value={productoEditando.stock}
-              onChange={(e) => setProductoEditando({ ...productoEditando, stock: Number(e.target.value) })}
-              placeholder="Stock"
-              style={{ width: "100%", marginBottom: "0.5rem" }}
-            />
-            <select
-              value={productoEditando.tipo}
-              onChange={(e) => setProductoEditando({ ...productoEditando, tipo: e.target.value as "producto" | "servicio" })}
-              style={{ width: "100%", marginBottom: "1rem" }}
-            >
-              <option value="producto">Producto</option>
-              <option value="servicio">Servicio</option>
-            </select>
-            <button onClick={actualizarProducto}>Guardar</button>
-            <button onClick={() => setProductoEditando(null)} style={{ marginLeft: "1rem" }}>Cancelar</button>
-          </div>
-        ) : (
-          <div key={p.id} style={{ border: "1px solid #ccc", padding: "1rem", marginBottom: "1rem" }}>
-            <h4>{p.nombre}</h4>
-            <img src={p.imagen} alt={p.nombre} style={{ width: "100%", borderRadius: "10px" }} />
-            <p>Precio: ${p.precio}</p>
-            <p>Stock: {p.stock}</p>
-            <p>Tipo: {p.tipo}</p>
-            <button onClick={() => setProductoEditando(p)} style={{ marginRight: "0.5rem" }}>Editar</button>
-            <button onClick={() => eliminarProducto(p.id!)} style={{ backgroundColor: "red", color: "white" }}>Eliminar</button>
-          </div>
-        )
-      )}
+      <h3>Modificar productos</h3>
+      {productos.map((producto) => (
+        <div key={producto.id} className="producto-card">
+          <p><strong>{producto.nombre}</strong></p>
+          <input value={producto.nombre} onChange={(e) => setProductos((prev) => prev.map((p) => p.id === producto.id ? { ...p, nombre: e.target.value } : p))} />
+          <input type="number" value={producto.precio} onChange={(e) => setProductos((prev) => prev.map((p) => p.id === producto.id ? { ...p, precio: Number(e.target.value) } : p))} />
+          <input type="number" value={producto.stock} onChange={(e) => setProductos((prev) => prev.map((p) => p.id === producto.id ? { ...p, stock: Number(e.target.value) } : p))} />
+          <button onClick={() => actualizarProducto(producto)}>Guardar cambios</button>
+        </div>
+      ))}
     </div>
   );
 }

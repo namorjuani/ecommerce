@@ -1,9 +1,11 @@
+// src/pages/Home.tsx
 import "./css/Home.css";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useCarrito } from "../context/CarritoContext"; // 👈 importante
 
 interface Producto {
   id?: string;
@@ -16,18 +18,20 @@ interface Producto {
 
 export default function Home() {
   const { usuario, esAdmin, cerrarSesion } = useAuth();
+  const { agregarAlCarrito, carrito } = useCarrito(); // ✅ usamos carrito
   const [productos, setProductos] = useState<Producto[]>([]);
   const [nombreTienda, setNombreTienda] = useState("Mi Tienda");
   const [descripcion, setDescripcion] = useState("");
   const [imagen, setImagen] = useState("");
-  const [textoHero, setTextoHero] = useState("¡Bienvenido a nuestra tienda!");
-  const [colorFondo, setColorFondo] = useState("#ffffff");
-  const [colorBoton, setColorBoton] = useState("#000000");
-  const [whatsapp, setWhatsapp] = useState("");
+  const [logo, setLogo] = useState("");
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const cargarDatos = async () => {
       if (!usuario) return;
+
+      localStorage.setItem("userId", usuario.uid);
 
       const tiendaRef = doc(db, "tiendas", usuario.uid);
       const tiendaSnap = await getDoc(tiendaRef);
@@ -37,6 +41,7 @@ export default function Home() {
         setNombreTienda(data.nombre || "Mi Tienda");
         setDescripcion(data.descripcion || "");
         setImagen(data.imagen || "");
+        setLogo(data.logo || "");
       }
 
       const productosRef = collection(db, "tiendas", usuario.uid, "productos");
@@ -46,69 +51,69 @@ export default function Home() {
         ...(doc.data() as Producto),
       }));
       setProductos(lista);
-
-      const configRef = doc(db, "tiendas", usuario.uid, "configuracion", "estilos");
-      const configSnap = await getDoc(configRef);
-      if (configSnap.exists()) {
-        const data = configSnap.data();
-        setColorFondo(data.colorFondo || "#ffffff");
-        setColorBoton(data.colorBoton || "#000000");
-        setTextoHero(data.textoHero || "¡Bienvenido a nuestra tienda!");
-        setWhatsapp(data.whatsapp || "");
-      }
     };
 
     cargarDatos();
   }, [usuario]);
 
   return (
-    <div className="home-container" style={{ backgroundColor: colorFondo }}>
+    <div className="home-container">
       <main className="page-wrapper">
-        <header className="navbar">
-          <h1>{nombreTienda}</h1>
-
-          {usuario ? (
-            <div style={{ display: "flex", gap: "1rem" }}>
-              {esAdmin && <Link to="/admin" className="login-btn">Modo Admin</Link>}
-              <button onClick={cerrarSesion} className="login-btn">Cerrar sesión</button>
-            </div>
-          ) : (
-            <Link to="/login" className="login-btn">Ingresar</Link>
-          )}
-        </header>
 
         <section className="hero">
-          {imagen && <img src={imagen} alt="Imagen principal" />}
-          <h2>{textoHero}</h2>
+          {imagen && imagen.trim() !== "" && <img src={imagen} alt="Imagen principal" />}
+          <h2>{nombreTienda}</h2>
           <p>{descripcion}</p>
         </section>
 
         <section className="productos">
           <h3>Lo que ofrecemos</h3>
           <div className="product-list">
-            {productos.map((item) => (
-              <div className="product-card" key={item.id}>
-                <img src={item.imagen} alt={item.nombre} />
-                <h4>{item.nombre}</h4>
-                <p>
-                  {item.tipo === "producto"
-                    ? item.stock > 0
-                      ? `$${item.precio}`
-                      : "Sin stock"
-                    : "Consultá por WhatsApp"}
-                </p>
-                <button
-                  style={{ backgroundColor: colorBoton, color: "white" }}
-                  disabled={item.stock === 0 && item.tipo === "producto"}
-                >
-                  {item.tipo === "producto"
-                    ? item.stock > 0
-                      ? "Agregar al carrito"
-                      : "Sin stock"
-                    : "Contactar"}
-                </button>
-              </div>
-            ))}
+          {productos.map((item) => {
+  const sinStock = item.stock === 0;
+
+  return (
+    <div
+      className="product-card"
+      key={item.id}
+      onClick={() => !sinStock && navigate(`/producto/${item.id}`)}
+      style={{
+        cursor: sinStock ? "not-allowed" : "pointer",
+        opacity: sinStock ? 0.5 : 1,
+        pointerEvents: sinStock ? "none" : "auto",
+      }}
+    >
+      <img src={item.imagen} alt={item.nombre} />
+      <h4>{item.nombre}</h4>
+      <p>
+        {item.tipo === "producto"
+          ? sinStock
+            ? "Sin stock"
+            : `$${item.precio}`
+          : "Consultá por WhatsApp"}
+      </p>
+      {item.envioGratis && (
+        <p style={{ color: "green", fontWeight: "bold" }}>¡Envío gratis!</p>
+      )}
+      {item.descripcionCorta && (
+        <p style={{ fontSize: "0.85rem", color: "#666" }}>{item.descripcionCorta}</p>
+      )}
+      <button
+        disabled={sinStock}
+        onClick={(e) => {
+          e.stopPropagation();
+          agregarAlCarrito(item);
+        }}
+      >
+        {item.tipo === "producto"
+          ? sinStock
+            ? "Sin stock"
+            : "Agregar al carrito"
+          : "Contactar"}
+      </button>
+    </div>
+  );
+})}
           </div>
         </section>
       </main>
@@ -116,28 +121,6 @@ export default function Home() {
       <footer>
         <p>© 2025 - Ecommerce Web</p>
       </footer>
-
-      {whatsapp && (
-        <a
-          href={`https://wa.me/${whatsapp}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            position: "fixed",
-            bottom: "20px",
-            right: "20px",
-            backgroundColor: "#25D366",
-            color: "white",
-            padding: "12px 16px",
-            borderRadius: "50%",
-            fontSize: "20px",
-            textAlign: "center",
-            textDecoration: "none",
-          }}
-        >
-          💬
-        </a>
-      )}
     </div>
   );
 }

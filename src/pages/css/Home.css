@@ -71,3 +71,10 @@ footer {
     border-radius: 8px;
   }
   
+.AgregarAlCarrito {
+    background-color: var(--andes-color-blue-500, #3483fa);
+    border-color: transparent;
+    color: #fff;
+    box-sizing: border-box;
+    border-radius: 6px;
+}
