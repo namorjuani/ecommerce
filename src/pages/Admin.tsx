@@ -55,6 +55,12 @@ export default function Admin() {
   const [colorBoton, setColorBoton] = useState("#000000");
   const [whatsapp, setWhatsapp] = useState("");
 
+  // 📬 Notificaciones
+  const [correoNotificacion, setCorreoNotificacion] = useState("");
+  const [whatsappNotificacion, setWhatsappNotificacion] = useState("");
+  const [recibirPorCorreo, setRecibirPorCorreo] = useState(false);
+  const [recibirPorWhatsapp, setRecibirPorWhatsapp] = useState(false);
+
   useEffect(() => {
     if (!usuario) return;
 
@@ -71,6 +77,10 @@ export default function Admin() {
         setColorFondo(data.colorFondo || "#ffffff");
         setColorBoton(data.colorBoton || "#000000");
         setWhatsapp(data.whatsapp || "");
+        setCorreoNotificacion(data.correoNotificacion || "");
+        setWhatsappNotificacion(data.whatsappNotificacion || "");
+        setRecibirPorCorreo(data.recibirPorCorreo || false);
+        setRecibirPorWhatsapp(data.recibirPorWhatsapp || false);
       }
 
       const productosRef = collection(db, "tiendas", usuario.uid, "productos");
@@ -99,6 +109,10 @@ export default function Admin() {
         colorFondo,
         colorBoton,
         whatsapp,
+        correoNotificacion,
+        whatsappNotificacion,
+        recibirPorCorreo,
+        recibirPorWhatsapp,
       },
       { merge: true }
     );
@@ -108,8 +122,25 @@ export default function Admin() {
   const guardarProductoNuevo = async () => {
     if (!usuario) return;
     const ref = collection(db, "tiendas", usuario.uid, "productos");
-    await addDoc(ref, nuevo);
+  
+    const productoLimpio = {
+      nombre: nuevo.nombre,
+      precio: nuevo.precio,
+      imagen: nuevo.imagen,
+      imagenes: nuevo.imagenes || [],
+      descripcion: nuevo.descripcion || "",
+      descripcionCorta: nuevo.descripcionCorta || "",
+      cuotas: nuevo.cuotas || "",
+      envioGratis: nuevo.envioGratis,
+      color: nuevo.color || "",
+      stock: nuevo.stock,
+      tipo: nuevo.tipo,
+    };
+  
+    await addDoc(ref, productoLimpio as any);
+
     alert("Producto agregado");
+  
     setNuevo({
       nombre: "",
       precio: 0,
@@ -124,52 +155,56 @@ export default function Admin() {
       tipo: "producto",
     });
   };
+  
+  
 
   const actualizarProducto = async (producto: Producto) => {
     if (!usuario || !producto.id) return;
     const ref = doc(db, "tiendas", usuario.uid, "productos", producto.id);
-    await updateDoc(ref, producto);
-    alert("Producto actualizado");
+    const { id, ...productoSinId } = producto;
+await updateDoc(ref, productoSinId);
+
   };
 
   return (
     <div className="admin-container">
       <div className="admin-header">
         <h2>Panel de administración</h2>
-        <Link to="/">
-          <button>Volver a la tienda</button>
-        </Link>
-        <Link to="/admin/pedidos">
-          <button>Ver pedidos</button>
-        </Link>
+        <Link to="/"><button>Volver a la tienda</button></Link>
+        <Link to="/admin/pedidos"><button>Ver pedidos</button></Link>
       </div>
 
       <h3>Configuración visual de la tienda</h3>
-      {/* ... Inputs de configuración visual ... */}
       <input placeholder="Logo (URL)" value={logo} onChange={(e) => setLogo(e.target.value)} />
       <input placeholder="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} />
       <textarea placeholder="Descripción" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
       <input placeholder="Imagen principal" value={imagen} onChange={(e) => setImagen(e.target.value)} />
-      <input placeholder="Texto hero" value={textoHero} onChange={(e) => setTextoHero(e.target.value)} />
-      <input placeholder="WhatsApp" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
+      <input placeholder="Texto principal (Hero)" value={textoHero} onChange={(e) => setTextoHero(e.target.value)} />
+      <input placeholder="WhatsApp para contacto flotante" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
+      <label>Color de fondo: <input type="color" value={colorFondo} onChange={(e) => setColorFondo(e.target.value)} /></label>
+      <label>Color de botones: <input type="color" value={colorBoton} onChange={(e) => setColorBoton(e.target.value)} /></label>
+
+      <h3>Notificaciones de pedidos</h3>
+      <input placeholder="Correo para notificación de pedidos" value={correoNotificacion} onChange={(e) => setCorreoNotificacion(e.target.value)} />
+      <input placeholder="WhatsApp para notificación de pedidos" value={whatsappNotificacion} onChange={(e) => setWhatsappNotificacion(e.target.value)} />
       <label>
-        Color de fondo:{" "}
-        <input type="color" value={colorFondo} onChange={(e) => setColorFondo(e.target.value)} />
+        <input type="checkbox" checked={recibirPorCorreo} onChange={(e) => setRecibirPorCorreo(e.target.checked)} />
+        Recibir pedidos por correo
       </label>
       <label>
-        Color de botón:{" "}
-        <input type="color" value={colorBoton} onChange={(e) => setColorBoton(e.target.value)} />
+        <input type="checkbox" checked={recibirPorWhatsapp} onChange={(e) => setRecibirPorWhatsapp(e.target.checked)} />
+        Recibir pedidos por WhatsApp
       </label>
+
       <button onClick={guardarConfiguracion}>Guardar configuración</button>
 
       <h3>Agregar producto</h3>
-      {/* ... Inputs de carga de producto ... */}
       <input placeholder="Nombre" value={nuevo.nombre} onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })} />
       <input placeholder="Precio" type="number" value={nuevo.precio} onChange={(e) => setNuevo({ ...nuevo, precio: Number(e.target.value) })} />
       <input placeholder="Imagen" value={nuevo.imagen} onChange={(e) => setNuevo({ ...nuevo, imagen: e.target.value })} />
       <input placeholder="Imágenes (separadas por coma)" onChange={(e) => setNuevo({ ...nuevo, imagenes: e.target.value.split(",") })} />
       <textarea placeholder="Descripción larga" value={nuevo.descripcion} onChange={(e) => setNuevo({ ...nuevo, descripcion: e.target.value })} />
-      <input placeholder="Descripción corta (talle, tamaño...)" value={nuevo.descripcionCorta} onChange={(e) => setNuevo({ ...nuevo, descripcionCorta: e.target.value })} />
+      <input placeholder="Descripción corta" value={nuevo.descripcionCorta} onChange={(e) => setNuevo({ ...nuevo, descripcionCorta: e.target.value })} />
       <input placeholder="Cuotas" value={nuevo.cuotas} onChange={(e) => setNuevo({ ...nuevo, cuotas: e.target.value })} />
       <label>
         Envío gratis:

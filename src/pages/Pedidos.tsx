@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { db } from "../firebase";
-import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
+import {
+    collection,
+    getDocs,
+    doc,
+    updateDoc,
+    Timestamp,
+} from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
 import "./css/Pedidos.css";
 
@@ -21,7 +27,7 @@ interface Pedido {
     }[];
     total: number;
     estado: "pendiente" | "en_proceso" | "realizado";
-    fecha: string;
+    fecha: Timestamp | string;
 }
 
 export default function Pedidos() {
@@ -34,9 +40,9 @@ export default function Pedidos() {
         const cargarPedidos = async () => {
             const ref = collection(db, "tiendas", usuario.uid, "pedidos");
             const snapshot = await getDocs(ref);
-            const lista: Pedido[] = snapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...(doc.data() as Pedido),
+            const lista: Pedido[] = snapshot.docs.map((docSnap) => ({
+                ...(docSnap.data() as Omit<Pedido, "id">),
+                id: docSnap.id,
             }));
             setPedidos(lista);
         };
@@ -52,7 +58,9 @@ export default function Pedidos() {
         const ref = doc(db, "tiendas", usuario.uid, "pedidos", pedidoId);
         await updateDoc(ref, { estado: nuevoEstado });
         setPedidos((prev) =>
-            prev.map((p) => (p.id === pedidoId ? { ...p, estado: nuevoEstado } : p))
+            prev.map((p) =>
+                p.id === pedidoId ? { ...p, estado: nuevoEstado } : p
+            )
         );
     };
 
@@ -61,6 +69,25 @@ export default function Pedidos() {
         "en_proceso",
         "realizado",
     ];
+
+    const formatearFecha = (fecha: Timestamp | string): string => {
+        let d: Date;
+        if (typeof fecha === "string") {
+            d = new Date(fecha);
+        } else if ("toDate" in fecha) {
+            d = fecha.toDate();
+        } else {
+            return "";
+        }
+
+        const dia = d.getDate().toString().padStart(2, "0");
+        const mes = (d.getMonth() + 1).toString().padStart(2, "0");
+        const anio = d.getFullYear();
+        const hora = d.getHours().toString().padStart(2, "0");
+        const minutos = d.getMinutes().toString().padStart(2, "0");
+
+        return `${dia}/${mes}/${anio} ${hora}:${minutos}`;
+    };
 
     return (
         <div className="pedidos-container">
@@ -92,7 +119,7 @@ export default function Pedidos() {
                                         <strong>Email:</strong> {pedido.cliente.email}
                                     </p>
                                     <p>
-                                        <strong>Fecha:</strong> {pedido.fecha}
+                                        <strong>Fecha:</strong> {formatearFecha(pedido.fecha)}
                                     </p>
                                     <p>
                                         <strong>Total:</strong> ${pedido.total}
@@ -112,18 +139,21 @@ export default function Pedidos() {
                                         )}
                                     </ul>
 
-
                                     {estado !== "realizado" && (
                                         <div className="estado-buttons">
                                             {estado === "pendiente" && (
                                                 <button
-                                                    onClick={() => cambiarEstado(pedido.id, "en_proceso")}
+                                                    onClick={() =>
+                                                        cambiarEstado(pedido.id, "en_proceso")
+                                                    }
                                                 >
                                                     Marcar como En Proceso
                                                 </button>
                                             )}
                                             <button
-                                                onClick={() => cambiarEstado(pedido.id, "realizado")}
+                                                onClick={() =>
+                                                    cambiarEstado(pedido.id, "realizado")
+                                                }
                                             >
                                                 Marcar como Realizado
                                             </button>

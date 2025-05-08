@@ -1,8 +1,10 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { db } from "../firebase";
-import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { useCarrito } from "../context/CarritoContext";
+import "./css/ProductDetail.css";
+
 
 interface Producto {
   id?: string;
@@ -22,53 +24,37 @@ export default function ProductDetail() {
   const { id } = useParams();
   const [producto, setProducto] = useState<Producto | null>(null);
   const [imagenPrincipal, setImagenPrincipal] = useState("");
-  const { agregarAlCarrito, toggleCarrito } = useCarrito();
+  const { agregarAlCarrito } = useCarrito();
 
   useEffect(() => {
     const cargarProducto = async () => {
       if (!id) return;
 
-      const dominioActual = window.location.hostname;
-      const dominioBuscar = dominioActual.includes("localhost")
-        ? "cliente1.mitiendapersonalizada.com"
-        : dominioActual;
+      const tiendaId = localStorage.getItem("userId");
+      if (!tiendaId) return;
 
-      const tiendasQuery = query(collection(db, "tiendas"), where("dominio", "==", dominioBuscar));
-      const tiendasSnap = await getDocs(tiendasQuery);
+      const productoRef = doc(db, "tiendas", tiendaId, "productos", id);
+      const productoSnap = await getDoc(productoRef);
 
-      if (!tiendasSnap.empty) {
-        const tiendaDoc = tiendasSnap.docs[0];
-        const tiendaId = tiendaDoc.id;
-
-        const productoRef = doc(db, "tiendas", tiendaId, "productos", id);
-        const productoSnap = await getDoc(productoRef);
-
-        if (productoSnap.exists()) {
-          const data = productoSnap.data() as Producto;
-          setProducto({ ...data, id });
-          setImagenPrincipal(data.imagen);
-        } else {
-          console.error("Producto no encontrado");
-        }
-      } else {
-        console.error("No se encontró la tienda para este dominio.");
+      if (productoSnap.exists()) {
+        const data = productoSnap.data() as Producto;
+        setProducto({ ...data, id });
+        setImagenPrincipal(data.imagen);
       }
     };
 
     cargarProducto();
   }, [id]);
 
-  if (!producto) {
-    return <p style={{ textAlign: "center", marginTop: "3rem" }}>Cargando producto...</p>;
-  }
+  if (!producto) return <p style={{ textAlign: "center", marginTop: "3rem" }}>Cargando producto...</p>;
 
   return (
     <div style={{ display: "flex", padding: "2rem", gap: "2rem", flexWrap: "wrap" }}>
-      {/* Imágenes del producto */}
       <div style={{ flex: "1", minWidth: "300px" }}>
         <img
           src={imagenPrincipal}
           alt="Producto"
+          onError={() => setImagenPrincipal("/imagen-default.jpg")}
           style={{ width: "100%", borderRadius: "10px", marginBottom: "1rem" }}
         />
         <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
@@ -78,6 +64,7 @@ export default function ProductDetail() {
               src={img}
               alt={`Miniatura ${index}`}
               onClick={() => setImagenPrincipal(img)}
+              onError={(e) => (e.currentTarget.style.display = "none")}
               style={{
                 width: "60px",
                 height: "60px",
@@ -91,50 +78,31 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {/* Info del producto */}
       <div style={{ flex: "1", minWidth: "300px" }}>
         <h2>{producto.nombre}</h2>
         <p style={{ fontSize: "1.5rem", fontWeight: "bold", margin: "1rem 0" }}>${producto.precio}</p>
+        {producto.cuotas && <p>Cuotas: {producto.cuotas}</p>}
+        {producto.envioGratis && <p style={{ color: "green" }}>¡Envío gratis!</p>}
+        {producto.color && <p>Color: {producto.color}</p>}
+        <p>Stock disponible: {producto.stock}</p>
 
-        {producto.cuotas && (
-          <p style={{ color: "#333", margin: "0.5rem 0" }}>Cuotas: {producto.cuotas}</p>
-        )}
+        <button
+          onClick={() => agregarAlCarrito(producto)}
+          style={{
+            backgroundColor: "#3483fa",
+            color: "white",
+            border: "none",
+            padding: "0.8rem 1.5rem",
+            fontSize: "1rem",
+            borderRadius: "8px",
+            cursor: "pointer",
+            marginTop: "1rem",
+          }}
+        >
+          Agregar al carrito
+        </button>
 
-        {producto.envioGratis && (
-          <p style={{ color: "green", fontWeight: "bold", margin: "0.5rem 0" }}>
-            ¡Envío gratis!
-          </p>
-        )}
-
-        {producto.color && (
-          <p style={{ margin: "0.5rem 0" }}>Color: {producto.color}</p>
-        )}
-
-        <p style={{ margin: "0.5rem 0" }}>Stock disponible: {producto.stock}</p>
-
-        <div style={{ marginTop: "2rem", display: "flex", gap: "1rem" }}>
-          <button
-            style={{
-              backgroundColor: "#3483fa",
-              color: "white",
-              border: "none",
-              padding: "0.8rem 1.5rem",
-              fontSize: "1rem",
-              borderRadius: "8px",
-              cursor: "pointer",
-            }}
-            onClick={() => {
-              agregarAlCarrito(producto);
-              toggleCarrito();
-            }}
-          >
-            Agregar al carrito
-          </button>
-        </div>
-
-        <div style={{ marginTop: "2rem" }}>
-          <p>{producto.descripcion}</p>
-        </div>
+        <p style={{ marginTop: "2rem" }}>{producto.descripcion}</p>
       </div>
     </div>
   );
