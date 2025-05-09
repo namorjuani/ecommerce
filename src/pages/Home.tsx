@@ -10,9 +10,8 @@ interface Producto {
   nombre: string;
   precio: number;
   imagen: string;
-  stock: number; // ✅ agregá esto
+  stock?: number;
 }
-
 
 export default function Home() {
   const [nombre, setNombre] = useState("Mi tienda");
@@ -20,6 +19,11 @@ export default function Home() {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [whatsapp, setWhatsapp] = useState("");
   const [mostrarMenu, setMostrarMenu] = useState(false);
+
+  // 🎨 Configuración del banner
+  const [alturaBanner, setAlturaBanner] = useState("100px");
+  const [posicionBanner, setPosicionBanner] = useState("center");
+  const [tamañoBanner, setTamañoBanner] = useState("cover");
 
   const { cliente, iniciarSesion, cerrarSesion } = useCliente();
   const navigate = useNavigate();
@@ -36,13 +40,16 @@ export default function Home() {
         setNombre(data.nombre || "Mi tienda");
         setImagen(data.imagen || "");
         setWhatsapp(data.whatsapp || "");
+        setAlturaBanner(data.alturaBanner || "100px");
+        setPosicionBanner(data.posicionBanner || "center");
+        setTamañoBanner(data.tamañoBanner || "cover");
       }
 
       const productosRef = collection(db, "tiendas", tiendaId, "productos");
       const q = query(productosRef);
       const querySnapshot = await getDocs(q);
       const productosData: Producto[] = querySnapshot.docs.map((doc) => ({
-
+        
         ...(doc.data() as Producto),
         id: doc.id,
       }));
@@ -161,16 +168,18 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Hero */}
-      <div className="hero">
-        {imagen && (
-          <img
-            src={imagen}
-            alt="Imagen principal"
-            onError={(e) => (e.currentTarget.src = "/imagen-default.jpg")}
-          />
-        )}
-      </div>
+      {/* Hero/banner como fondo */}
+      <div
+        style={{
+          backgroundImage: `url(${imagen})`,
+          backgroundPosition: posicionBanner,
+          backgroundRepeat: "no-repeat",
+          backgroundSize: tamañoBanner,
+          borderBottom: "1px solid rgba(0, 0, 0, .1)",
+          height: alturaBanner,
+          position: "relative",
+        }}
+      />
 
       {/* Productos */}
       <div className="productos">

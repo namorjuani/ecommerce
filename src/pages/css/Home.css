@@ -90,3 +90,13 @@ footer {
 .whatsapp-flotante:hover {
   transform: scale(1.1);
 }
+
+.hero-banner {
+  background-position: 50%;
+  background-repeat: no-repeat;
+  background-size: cover;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  flex-direction: row;
+  height: 100px;
+  position: relative;
+}
