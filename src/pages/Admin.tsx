@@ -61,6 +61,8 @@ export default function Admin() {
   const [ordenPrecio, setOrdenPrecio] = useState<"" | "asc" | "desc">("");
   const [filtroCategoria, setFiltroCategoria] = useState("");
 
+  
+
   // configuración estética
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
@@ -76,6 +78,8 @@ export default function Admin() {
   const [whatsappNotificacion, setWhatsappNotificacion] = useState("");
   const [recibirPorCorreo, setRecibirPorCorreo] = useState(false);
   const [recibirPorWhatsapp, setRecibirPorWhatsapp] = useState(false);
+  const [mercadoPagoToken, setMercadoPagoToken] = useState("");
+
   useEffect(() => {
     if (!usuario) return;
 
@@ -96,19 +100,19 @@ export default function Admin() {
         setWhatsappNotificacion(data.whatsappNotificacion || "");
         setRecibirPorCorreo(data.recibirPorCorreo || false);
         setRecibirPorWhatsapp(data.recibirPorWhatsapp || false);
+        setMercadoPagoToken(data.mercadoPagoToken || "");
       }
+const productosRef = collection(db, "tiendas", usuario.uid, "productos");
+    const snapshot = await getDocs(productosRef);
+    const lista = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Producto[];
+    setProductos(lista);
+  };
 
-      const productosRef = collection(db, "tiendas", usuario.uid, "productos");
-      const snapshot = await getDocs(productosRef);
-      const lista = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Producto[];
-      setProductos(lista);
-    };
-
-    cargarDatos();
-  }, [usuario]);
+  cargarDatos();
+}, [usuario]);
 
   const guardarConfiguracion = async () => {
     if (!usuario) return;
@@ -126,6 +130,7 @@ export default function Admin() {
       whatsappNotificacion,
       recibirPorCorreo,
       recibirPorWhatsapp,
+      mercadoPagoToken, // 🔹 Agregalo acá
     }, { merge: true });
     alert("Configuración guardada");
   };
@@ -180,23 +185,42 @@ export default function Admin() {
 
       {/* 🧭 Menú de navegación */}
       <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem", borderBottom: "1px solid #ccc", paddingBottom: "1rem" }}>
-        {["productos", "estetica", "notificaciones", "ayuda"].map((seccion) => (
-          <button
-            key={seccion}
-            onClick={() => setSeccionActiva(seccion)}
-            style={{
-              backgroundColor: seccionActiva === seccion ? "#3483fa" : "#eee",
-              color: seccionActiva === seccion ? "#fff" : "#000",
-              padding: "0.5rem 1rem",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-            }}
-          >
-            {seccion.charAt(0).toUpperCase() + seccion.slice(1)}
-          </button>
-        ))}
+        {["productos", "estetica", "notificaciones", "pagos", "ayuda"].map((seccion) => (
+  <button
+    key={seccion}
+    onClick={() => setSeccionActiva(seccion)}
+    style={{
+      backgroundColor: seccionActiva === seccion ? "#3483fa" : "#eee",
+      color: seccionActiva === seccion ? "#fff" : "#000",
+      padding: "0.5rem 1rem",
+      border: "none",
+      borderRadius: "6px",
+      cursor: "pointer",
+    }}
+  >
+    {seccion.charAt(0).toUpperCase() + seccion.slice(1)}
+  </button>
+))}
       </div>
+
+      {/* 💳 Sección: Pagos (Mercado Pago) */}
+{seccionActiva === "pagos" && (
+  <>
+    <h3>Configuración de Mercado Pago</h3>
+    <p>Pegá tu token privado de Mercado Pago para poder cobrar automáticamente.</p>
+    <input
+      type="text"
+      placeholder="Token privado de Mercado Pago"
+      value={mercadoPagoToken}
+      onChange={(e) => setMercadoPagoToken(e.target.value)}
+      style={{ width: "100%", marginBottom: "1rem", padding: "0.5rem" }}
+    />
+    <button onClick={guardarConfiguracion} style={{ backgroundColor: "#3483fa", color: "white", padding: "0.6rem 1.5rem", border: "none", borderRadius: "6px", cursor: "pointer" }}>
+      💾 Guardar token
+    </button>
+  </>
+)}
+
       {/* 🛒 Sección: Productos */}
       {seccionActiva === "productos" && (
         <>
@@ -367,6 +391,30 @@ export default function Admin() {
           </button>
         </>
       )}
+
+
+{ seccionActiva === "pagos" && (
+    <>
+      <h3>Configuración de pagos</h3>
+      <p>Ingresá tu token de acceso de Mercado Pago (Access Token):</p>
+      <input
+        value={mercadoPagoToken}
+        onChange={(e) => setMercadoPagoToken(e.target.value)}
+        style={{ width: "100%", marginBottom: "1rem" }}
+      />
+      <button onClick={guardarConfiguracion}>💾 Guardar token</button>
+      <p style={{ marginTop: "1rem", fontSize: "0.9rem", color: "#555" }}>
+        Podés obtener tu access token desde:{" "}
+        <a
+          href="https://www.mercadopago.com.ar/developers/panel/credentials"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Mercado Pago Developers
+        </a>
+      </p>
+    </>
+  )}
 
       {/* 🔔 Sección: Notificaciones */}
       {seccionActiva === "notificaciones" && (

@@ -100,3 +100,12 @@ footer {
   height: 100px;
   position: relative;
 }
+
+.productos::-webkit-scrollbar {
+  height: 8px;
+}
+
+.productos::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}

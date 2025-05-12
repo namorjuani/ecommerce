@@ -4,6 +4,8 @@ import { doc, getDoc, collection, query, getDocs } from "firebase/firestore";
 import { Link, useNavigate } from "react-router-dom";
 import { useCliente } from "../context/ClienteContext";
 import "./css/Home.css";
+import CarruselPorCategoria from "../Components/CarruselPorCategoria";
+
 
 interface Producto {
   id: string;
@@ -11,6 +13,7 @@ interface Producto {
   precio: number;
   imagen: string;
   stock?: number;
+  categoria: string;
 }
 
 export default function Home() {
@@ -183,37 +186,23 @@ export default function Home() {
 
       {/* Productos */}
       <div className="productos">
-        <h2>Productos</h2>
-        <div className="product-list">
-          {productos.length === 0 ? (
-            <p>No hay productos cargados</p>
-          ) : (
-            productos.map((producto) => (
-              <Link
-                to={`/producto/${producto.id}`}
-                key={producto.id}
-                className="product-card"
-                style={{
-                  opacity: producto.stock === 0 ? 0.5 : 1,
-                  pointerEvents: producto.stock === 0 ? "none" : "auto",
-                }}
-              >
-                <img
-                  src={producto.imagen}
-                  alt={producto.nombre}
-                  onError={(e) => (e.currentTarget.src = "/imagen-default.jpg")}
-                />
-                <h3>{producto.nombre}</h3>
-                <p>${producto.precio}</p>
-                {producto.stock === 0 && (
-                  <p style={{ color: "red", fontWeight: "bold" }}>Sin stock</p>
-                )}
-              </Link>
-            ))
-          )}
-        </div>
+        <h2>Productos por categoría</h2>
+        {Object.entries(
+          productos.reduce((acc: { [cat: string]: Producto[] }, prod) => {
+            const cat = prod.categoria || "Sin categoría";
+            acc[cat] = acc[cat] || [];
+            acc[cat].push(prod);
+            return acc;
+          }, {})
+        ).map(([categoria, productosCat], i) => (
+          <CarruselPorCategoria
+            key={categoria}
+            categoria={categoria}
+            productos={productosCat}
+            carruselId={`carrusel-${i}`}
+          />
+        ))}
       </div>
-
       {/* Botón flotante de WhatsApp */}
       {whatsapp && (
         <a

@@ -1,5 +1,10 @@
+// src/pages/FormaEntrega.tsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
+import { useCliente } from "../context/ClienteContext";
+import { db } from "../firebase";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 interface Producto {
   id?: string;
@@ -12,26 +17,58 @@ interface Producto {
 export default function FormaEntrega() {
   const [carrito, setCarrito] = useState<Producto[]>([]);
   const [envio, setEnvio] = useState("");
+  const [clienteInfo, setClienteInfo] = useState<any>(null);
+  const { cliente } = useCliente();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const data = localStorage.getItem("carrito");
-    if (data) {
-      setCarrito(JSON.parse(data));
-    }
-  }, []);
+    const fetchData = async () => {
+      const data = localStorage.getItem("carrito");
+      if (data) setCarrito(JSON.parse(data));
+
+      const tiendaId = localStorage.getItem("userId");
+      if (tiendaId && cliente) {
+        const ref = doc(db, "tiendas", tiendaId, "clientes", cliente.uid);
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+          const datos = snap.data();
+          setClienteInfo(datos);
+          localStorage.setItem("cliente", JSON.stringify(datos));
+        }
+      }
+    };
+
+    fetchData();
+  }, [cliente]);
 
   const total = carrito.reduce((sum, prod) => sum + prod.precio, 0);
 
-  const continuar = () => {
-    if (!envio) {
-      alert("Selecciona una forma de entrega");
-      return;
-    }
+  const continuar = async () => {
+  if (!envio) {
+    alert("Selecciona una forma de entrega");
+    return;
+  }
 
-    localStorage.setItem("formaEntrega", envio);
-    navigate("/forma-pago");
-  };
+  const tiendaId = localStorage.getItem("userId");
+  if (!tiendaId || !cliente) return;
+
+  // volver a obtener el cliente actualizado desde Firestore
+  const ref = doc(db, "tiendas", tiendaId, "clientes", cliente.uid);
+  const snap = await getDoc(ref);
+
+  if (!snap.exists()) {
+    alert("No se encontraron los datos del cliente.");
+    return;
+  }
+
+  const clienteActualizado = snap.data();
+
+  // guardamos el cliente actualizado en localStorage
+  localStorage.setItem("cliente", JSON.stringify(clienteActualizado));
+  localStorage.setItem("formaEntrega", envio);
+
+  navigate("/forma-pago");
+};
 
   return (
     <div style={{ maxWidth: "1000px", margin: "auto", padding: "2rem" }}>
@@ -49,6 +86,15 @@ export default function FormaEntrega() {
             />{" "}
             Envío a domicilio
           </label>
+
+          {envio === "domicilio" && (
+  <div style={{ background: "#f1f1f1", padding: "1rem", borderRadius: "8px", marginBottom: "1rem" }}>
+    <h4>Dirección registrada:</h4>
+    <p>{clienteInfo?.direccion || "No hay dirección guardada."}</p>
+    <p style={{ fontSize: "0.9rem", color: "#888" }}>Podés modificarla desde la sección "Datos de envío".</p>
+  </div>
+)}
+
 
           <label style={{ display: "block", marginBottom: "1rem" }}>
             <input
