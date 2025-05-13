@@ -8,6 +8,7 @@ export const crearPreferencia = functions.https.onRequest(async (req, res) => {
   const { productos, tiendaId } = req.body;
 
   try {
+    // Traer accessToken de la tienda desde Firestore
     const docRef = admin.firestore().doc(`tiendas/${tiendaId}`);
     const docSnap = await docRef.get();
 
@@ -47,9 +48,9 @@ export const crearPreferencia = functions.https.onRequest(async (req, res) => {
       }
     );
 
-    res.status(200).json({ preferenceId: response.data.id });
+    res.json({ preferenceId: response.data.id }); // ✅ no hacer return acá
   } catch (error) {
-    console.error("Error al crear preferencia:", error);
+    console.error(error);
     res.status(500).send("Error al crear preferencia");
   }
 });

@@ -15,12 +15,22 @@ export default function FormaDePago() {
   const [carrito, setCarrito] = useState<any[]>([]);
   const navigate = useNavigate();
   const { vaciarCarrito } = useCarrito();
+  const [mp, setMp] = useState<any>(null);
+
+  useEffect(() => {
+    if (window.MercadoPago) {
+      const mpInstance = new window.MercadoPago("TEST-02545aaf-26ee-412a-adf6-411b7dd63808", {
+        locale: "es-AR",
+      });
+      setMp(mpInstance);
+    }
+  }, []);
 
   useEffect(() => {
     const data = localStorage.getItem("carrito");
     if (data) setCarrito(JSON.parse(data));
 
-    // Cargar script de MercadoPago
+    // SDK MercadoPago
     const script = document.createElement("script");
     script.src = "https://sdk.mercadopago.com/js/v2";
     script.async = true;
@@ -56,7 +66,7 @@ export default function FormaDePago() {
 
       try {
         const response = await fetch(
-          "https://us-central1-tu-app.cloudfunctions.net/crearPreferencia",
+          "https://us-central1-applavaderoartesanal.cloudfunctions.net/crearPreferencia", // ⚠️ Reemplazá con tu URL real
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -66,15 +76,10 @@ export default function FormaDePago() {
 
         const data = await response.json();
 
-        if (!window.MercadoPago) {
-          throw new Error("SDK de MercadoPago no cargado");
-        }
+        if (!data.preferenceId) throw new Error("No se obtuvo preferenceId");
 
-        const mp = new window.MercadoPago("PUBLIC_KEY_AQUI", { locale: "es-AR" });
-        const checkout = mp.checkout({
-          preference: { id: data.preferenceId },
-          autoOpen: true,
-        });
+        // Redirección simple al init_point de Mercado Pago
+        window.location.href = `https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=${data.preferenceId}`;
 
         localStorage.removeItem("carrito");
         vaciarCarrito();

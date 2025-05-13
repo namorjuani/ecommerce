@@ -406,7 +406,7 @@ const productosRef = collection(db, "tiendas", usuario.uid, "productos");
       <p style={{ marginTop: "1rem", fontSize: "0.9rem", color: "#555" }}>
         Podés obtener tu access token desde:{" "}
         <a
-          href="https://www.mercadopago.com.ar/developers/panel/credentials"
+          href="https://www.mercadopago.com.ar/developers/panel/app/3047697102060940/credentials/sandbox"
           target="_blank"
           rel="noopener noreferrer"
         >
