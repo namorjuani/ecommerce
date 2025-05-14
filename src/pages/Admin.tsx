@@ -14,6 +14,10 @@ import {
   setDoc,
   addDoc,
 } from "firebase/firestore";
+import { deleteDoc } from "firebase/firestore";
+import Swal from "sweetalert2";
+
+
 
 interface Producto {
   id?: string;
@@ -76,6 +80,30 @@ export default function Admin() {
   const [recibirPorWhatsapp, setRecibirPorWhatsapp] = useState(false);
   const [mercadoPagoToken, setMercadoPagoToken] = useState("");
   const [publicKeyMP, setPublicKeyMP] = useState("");
+
+  const cellStyle = {
+    padding: "8px",
+    border: "1px solid #ccc",
+  };
+
+  const btnStyle = (color: "green" | "red") => ({
+  backgroundColor: color === "green" ? "#4CAF50" : "red",
+  color: "white",
+  border: "none",
+  padding: "10px 14px",
+  fontSize: "1.1rem",
+  borderRadius: "6px",
+  marginRight: "6px",
+  cursor: "pointer",
+});
+
+
+  const editarCampo = (id: string, campo: string, valor: any) => {
+    setProductos((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, [campo]: valor } : p))
+    );
+  };
+
 
   useEffect(() => {
     if (!usuario) return;
@@ -157,11 +185,41 @@ export default function Admin() {
   };
 
   const actualizarProducto = async (producto: Producto) => {
-    if (!usuario || !producto.id) return;
-    const ref = doc(db, "tiendas", usuario.uid, "productos", producto.id);
-    const { id, ...data } = producto;
-    await updateDoc(ref, data);
-  };
+  if (!usuario || !producto.id) return;
+  const ref = doc(db, "tiendas", usuario.uid, "productos", producto.id);
+  const { id, ...data } = producto;
+  await updateDoc(ref, data);
+  Swal.fire({
+    icon: "success",
+    title: "Producto actualizado",
+    text: "Los cambios se guardaron correctamente.",
+    timer: 2000,
+    showConfirmButton: false,
+  });
+};
+
+
+  const deleteProduct = async (productId: string) => {
+  const confirm = await Swal.fire({
+    title: "¿Estás seguro?",
+    text: "Esta acción eliminará el producto permanentemente.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#d33",
+    cancelButtonColor: "#aaa",
+    confirmButtonText: "Sí, eliminar",
+    cancelButtonText: "Cancelar",
+  });
+
+  if (confirm.isConfirmed && usuario) {
+    const ref = doc(db, "tiendas", usuario.uid, "productos", productId);
+    await deleteDoc(ref);
+    setProductos((prev) => prev.filter((p) => p.id !== productId));
+    Swal.fire("Eliminado", "El producto ha sido eliminado.", "success");
+  }
+};
+
+
 
   const productosFiltrados = productos
     .filter(p => p.nombre.toLowerCase().includes(filtroNombre.toLowerCase()))
@@ -185,197 +243,237 @@ export default function Admin() {
       {/* 🧭 Menú de navegación */}
       <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem", borderBottom: "1px solid #ccc", paddingBottom: "1rem" }}>
         {["productos", "estetica", "notificaciones", "pagos", "ayuda"].map((seccion) => (
-  <button
-    key={seccion}
-    onClick={() => setSeccionActiva(seccion)}
-    style={{
-      backgroundColor: seccionActiva === seccion ? "#3483fa" : "#eee",
-      color: seccionActiva === seccion ? "#fff" : "#000",
-      padding: "0.5rem 1rem",
-      border: "none",
-      borderRadius: "6px",
-      cursor: "pointer",
-    }}
-  >
-    {seccion.charAt(0).toUpperCase() + seccion.slice(1)}
-  </button>
-))}
+          <button
+            key={seccion}
+            onClick={() => setSeccionActiva(seccion)}
+            style={{
+              backgroundColor: seccionActiva === seccion ? "#3483fa" : "#eee",
+              color: seccionActiva === seccion ? "#fff" : "#000",
+              padding: "0.5rem 1rem",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+            }}
+          >
+            {seccion.charAt(0).toUpperCase() + seccion.slice(1)}
+          </button>
+        ))}
       </div>
 
-  { seccionActiva === "pagos" && (
-  <>
-    <h3>Configuración de pagos</h3>
+      {seccionActiva === "pagos" && (
+        <>
+          <h3>Configuración de pagos</h3>
 
-    <label>Access Token de Mercado Pago (privado)</label>
-    <input
-      value={mercadoPagoToken}
-      onChange={(e) => setMercadoPagoToken(e.target.value)}
-      placeholder="ACCESS_TOKEN"
-      style={{ width: "100%", marginBottom: "1rem" }}
-    />
+          <label>Access Token de Mercado Pago (privado)</label>
+          <input
+            value={mercadoPagoToken}
+            onChange={(e) => setMercadoPagoToken(e.target.value)}
+            placeholder="ACCESS_TOKEN"
+            style={{ width: "100%", marginBottom: "1rem" }}
+          />
 
-    <label>Public Key de Mercado Pago (pública)</label>
-    <input
-      value={publicKeyMP}
-      onChange={(e) => setPublicKeyMP(e.target.value)}
-      placeholder="PUBLIC_KEY"
-      style={{ width: "100%", marginBottom: "1rem" }}
-    />
+          <label>Public Key de Mercado Pago (pública)</label>
+          <input
+            value={publicKeyMP}
+            onChange={(e) => setPublicKeyMP(e.target.value)}
+            placeholder="PUBLIC_KEY"
+            style={{ width: "100%", marginBottom: "1rem" }}
+          />
 
-    <button onClick={guardarConfiguracion} style={{ backgroundColor: "#3483fa", color: "white", border: "none", padding: "0.6rem 1.5rem", borderRadius: "6px", cursor: "pointer" }}>
-      💾 Guardar configuración
-    </button>
+          <button onClick={guardarConfiguracion} style={{ backgroundColor: "#3483fa", color: "white", border: "none", padding: "0.6rem 1.5rem", borderRadius: "6px", cursor: "pointer" }}>
+            💾 Guardar configuración
+          </button>
 
-    <p style={{ marginTop: "1rem", fontSize: "0.9rem", color: "#555" }}>
-      Podés obtener tus claves desde:{" "}
-      <a
-        href="https://www.mercadopago.com.ar/developers/panel/app/3047697102060940/credentials/sandbox"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Mercado Pago Developers
-      </a>
-    </p>
-  </>
-)}
+          <p style={{ marginTop: "1rem", fontSize: "0.9rem", color: "#555" }}>
+            Podés obtener tus claves desde:{" "}
+            <a
+              href="https://www.mercadopago.com.ar/developers/panel/app/3047697102060940/credentials/sandbox"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Mercado Pago Developers
+            </a>
+          </p>
+        </>
+      )}
 
 
       {/* 🛒 Sección: Productos */}
       {seccionActiva === "productos" && (
         <>
-        {/* 📁 Importador de productos por CSV */}
-<ImportadorCSV limite={50} />
+          {/* 📁 Importador de productos por CSV */}
+          <ImportadorCSV limite={50} />
 
           <h3>Agregar producto nuevo</h3>
-<div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "2rem" }}>
-  <label>Nombre
-    <input value={nuevo.nombre} onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })} />
-  </label>
-  <label>Precio
-    <input type="number" value={nuevo.precio} onChange={(e) => setNuevo({ ...nuevo, precio: Number(e.target.value) })} />
-  </label>
-  <label>Imagen principal
-    <input value={nuevo.imagen} onChange={(e) => setNuevo({ ...nuevo, imagen: e.target.value })} />
-  </label>
-  <label>Otras imágenes (separar URLs con coma)
-    <input value={nuevo.imagenes?.join(",") || ""} onChange={(e) => setNuevo({ ...nuevo, imagenes: e.target.value.split(",") })} />
-  </label>
-  <label>Descripción larga
-    <textarea value={nuevo.descripcion} onChange={(e) => setNuevo({ ...nuevo, descripcion: e.target.value })} />
-  </label>
-  <label>Descripción corta
-    <input value={nuevo.descripcionCorta} onChange={(e) => setNuevo({ ...nuevo, descripcionCorta: e.target.value })} />
-  </label>
-  <label>Cuotas
-    <input value={nuevo.cuotas} onChange={(e) => setNuevo({ ...nuevo, cuotas: e.target.value })} />
-  </label>
-  <label>Envío gratis
-    <input type="checkbox" checked={nuevo.envioGratis} onChange={(e) => setNuevo({ ...nuevo, envioGratis: e.target.checked })} />
-  </label>
-  <label>Color
-    <input value={nuevo.color} onChange={(e) => setNuevo({ ...nuevo, color: e.target.value })} />
-  </label>
-  <label>Stock base
-    <input type="number" value={nuevo.stock} onChange={(e) => setNuevo({ ...nuevo, stock: Number(e.target.value) })} />
-  </label>
-  <label>Categoría
-    <input value={nuevo.categoria} onChange={(e) => setNuevo({ ...nuevo, categoria: e.target.value })} />
-  </label>
-  <label>Tipo
-    <select value={nuevo.tipo} onChange={(e) => setNuevo({ ...nuevo, tipo: e.target.value as "producto" | "servicio" })}>
-      <option value="producto">Producto</option>
-      <option value="servicio">Servicio</option>
-    </select>
-  </label>
-</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "2rem" }}>
+            <label>Nombre
+              <input value={nuevo.nombre} onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })} />
+            </label>
+            <label>Precio
+              <input type="number" value={nuevo.precio} onChange={(e) => setNuevo({ ...nuevo, precio: Number(e.target.value) })} />
+            </label>
+            <label>Imagen principal
+              <input value={nuevo.imagen} onChange={(e) => setNuevo({ ...nuevo, imagen: e.target.value })} />
+            </label>
+            <label>Otras imágenes (separar URLs con coma)
+              <input value={nuevo.imagenes?.join(",") || ""} onChange={(e) => setNuevo({ ...nuevo, imagenes: e.target.value.split(",") })} />
+            </label>
+            <label>Descripción larga
+              <textarea value={nuevo.descripcion} onChange={(e) => setNuevo({ ...nuevo, descripcion: e.target.value })} />
+            </label>
+            <label>Descripción corta
+              <input value={nuevo.descripcionCorta} onChange={(e) => setNuevo({ ...nuevo, descripcionCorta: e.target.value })} />
+            </label>
+            <label>Cuotas
+              <input value={nuevo.cuotas} onChange={(e) => setNuevo({ ...nuevo, cuotas: e.target.value })} />
+            </label>
+            <label>Envío gratis
+              <input type="checkbox" checked={nuevo.envioGratis} onChange={(e) => setNuevo({ ...nuevo, envioGratis: e.target.checked })} />
+            </label>
+            <label>Color
+              <input value={nuevo.color} onChange={(e) => setNuevo({ ...nuevo, color: e.target.value })} />
+            </label>
+            <label>Stock base
+              <input type="number" value={nuevo.stock} onChange={(e) => setNuevo({ ...nuevo, stock: Number(e.target.value) })} />
+            </label>
+            <label>Categoría
+              <input value={nuevo.categoria} onChange={(e) => setNuevo({ ...nuevo, categoria: e.target.value })} />
+            </label>
+            <label>Tipo
+              <select value={nuevo.tipo} onChange={(e) => setNuevo({ ...nuevo, tipo: e.target.value as "producto" | "servicio" })}>
+                <option value="producto">Producto</option>
+                <option value="servicio">Servicio</option>
+              </select>
+            </label>
+          </div>
 
-{/* 🆕 Variantes */}
-<div style={{ border: "1px solid #ccc", padding: "1rem", borderRadius: "8px", marginBottom: "1.5rem" }}>
-  <h4>Variantes del producto (opcional)</h4>
-  <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem", flexWrap: "wrap" }}>
-    <input placeholder="Nombre variante (ej: 1.62cm)" id="variante-nombre" />
-    <input placeholder="Stock" type="number" id="variante-stock" />
-    <button
-      type="button"
-      onClick={() => {
-        const nombre = (document.getElementById("variante-nombre") as HTMLInputElement).value;
-        const stock = parseInt((document.getElementById("variante-stock") as HTMLInputElement).value);
-        if (nombre && !isNaN(stock)) {
-          setNuevo(prev => ({
-            ...prev,
-            variantes: [...(prev.variantes || []), { nombre, stock }]
-          }));
-          (document.getElementById("variante-nombre") as HTMLInputElement).value = "";
-          (document.getElementById("variante-stock") as HTMLInputElement).value = "";
-        }
-      }}
-      style={{ backgroundColor: "#3483fa", color: "white", border: "none", padding: "0.5rem 1rem", borderRadius: "5px", cursor: "pointer" }}
-    >
-      ➕ Añadir variante
-    </button>
-  </div>
+          {/* 🆕 Variantes */}
+          <div style={{ border: "1px solid #ccc", padding: "1rem", borderRadius: "8px", marginBottom: "1.5rem" }}>
+            <h4>Variantes del producto (opcional)</h4>
+            <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+              <input placeholder="Nombre variante (ej: 1.62cm)" id="variante-nombre" />
+              <input placeholder="Stock" type="number" id="variante-stock" />
+              <button
+                type="button"
+                onClick={() => {
+                  const nombre = (document.getElementById("variante-nombre") as HTMLInputElement).value;
+                  const stock = parseInt((document.getElementById("variante-stock") as HTMLInputElement).value);
+                  if (nombre && !isNaN(stock)) {
+                    setNuevo(prev => ({
+                      ...prev,
+                      variantes: [...(prev.variantes || []), { nombre, stock }]
+                    }));
+                    (document.getElementById("variante-nombre") as HTMLInputElement).value = "";
+                    (document.getElementById("variante-stock") as HTMLInputElement).value = "";
+                  }
+                }}
+                style={{ backgroundColor: "#3483fa", color: "white", border: "none", padding: "0.5rem 1rem", borderRadius: "5px", cursor: "pointer" }}
+              >
+                ➕ Añadir variante
+              </button>
+            </div>
 
-  {nuevo.variantes?.length ? (
-    <ul>
-      {nuevo.variantes.map((v, index) => (
-        <li key={index} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-          <span>{v.nombre} → Stock: {v.stock}</span>
-          <button
-            type="button"
-            onClick={() => setNuevo(prev => ({
-              ...prev,
-              variantes: prev.variantes?.filter((_, i) => i !== index)
-            }))}
-            style={{ backgroundColor: "red", color: "white", border: "none", padding: "0.2rem 0.5rem", borderRadius: "4px", cursor: "pointer" }}
-          >
-            ❌
-          </button>
-        </li>
-      ))}
-    </ul>
-  ) : <p style={{ fontSize: "0.9rem", color: "#555" }}>No hay variantes añadidas.</p>}
-</div>
+            {nuevo.variantes?.length ? (
+              <ul>
+                {nuevo.variantes.map((v, index) => (
+                  <li key={index} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+                    <span>{v.nombre} → Stock: {v.stock}</span>
+                    <button
+                      type="button"
+                      onClick={() => setNuevo(prev => ({
+                        ...prev,
+                        variantes: prev.variantes?.filter((_, i) => i !== index)
+                      }))}
+                      style={{ backgroundColor: "red", color: "white", border: "none", padding: "0.2rem 0.5rem", borderRadius: "4px", cursor: "pointer" }}
+                    >
+                      ❌
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : <p style={{ fontSize: "0.9rem", color: "#555" }}>No hay variantes añadidas.</p>}
+          </div>
 
           <button onClick={guardarProductoNuevo} style={{ marginBottom: "2rem", backgroundColor: "#3483fa", color: "white", border: "none", padding: "0.6rem 1.5rem", borderRadius: "6px", cursor: "pointer" }}>
             ➕ Agregar producto
           </button>
 
           <h3>Modificar productos existentes</h3>
-          {/* Tabla clara y alineada */}
+
+          {/* 🔎 Filtros de búsqueda */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", marginBottom: "1rem" }}>
+            <input
+              type="text"
+              placeholder="Buscar por nombre"
+              value={filtroNombre}
+              onChange={(e) => setFiltroNombre(e.target.value)}
+              style={{ flex: "1", padding: "0.4rem" }}
+            />
+            <select value={ordenPrecio} onChange={(e) => setOrdenPrecio(e.target.value as any)} style={{ padding: "0.4rem" }}>
+              <option value="">Ordenar por precio</option>
+              <option value="asc">Menor a mayor</option>
+              <option value="desc">Mayor a menor</option>
+            </select>
+            <input
+              type="text"
+              placeholder="Filtrar por categoría"
+              value={filtroCategoria}
+              onChange={(e) => setFiltroCategoria(e.target.value)}
+              style={{ flex: "1", padding: "0.4rem" }}
+            />
+          </div>
+
+          {/* 🧾 Tabla de productos */}
           <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "1rem" }}>
             <thead>
               <tr style={{ background: "#f0f0f0", textAlign: "left" }}>
-                <th style={{ padding: "8px", border: "1px solid #ccc" }}>Nombre</th>
-                <th style={{ padding: "8px", border: "1px solid #ccc" }}>Precio</th>
-                <th style={{ padding: "8px", border: "1px solid #ccc" }}>Stock</th>
-                <th style={{ padding: "8px", border: "1px solid #ccc" }}>Categoría</th>
-                <th style={{ padding: "8px", border: "1px solid #ccc" }}>Acción</th>
+                <th style={cellStyle}>Nombre</th>
+                <th style={cellStyle}>Precio</th>
+                <th style={cellStyle}>Stock</th>
+                <th style={cellStyle}>Categoría</th>
+                <th style={cellStyle}>Tipo</th>
+                <th style={cellStyle}>Envío Gratis</th>
+                <th style={cellStyle}>Cuotas</th>
+                <th style={cellStyle}>Acción</th>
               </tr>
             </thead>
             <tbody>
               {productosFiltrados.map((p) => (
                 <tr key={p.id}>
-                  <td style={{ padding: "8px", border: "1px solid #ccc" }}>
-                    <input value={p.nombre} onChange={(e) => setProductos((prev) => prev.map((x) => x.id === p.id ? { ...x, nombre: e.target.value } : x))} />
+                  <td style={cellStyle}>
+                    <input value={p.nombre} onChange={(e) => editarCampo(p.id!, "nombre", e.target.value)} />
                   </td>
-                  <td style={{ padding: "8px", border: "1px solid #ccc" }}>
-                    <input type="number" value={p.precio} onChange={(e) => setProductos((prev) => prev.map((x) => x.id === p.id ? { ...x, precio: Number(e.target.value) } : x))} />
+                  <td style={cellStyle}>
+                    <input type="number" value={p.precio} onChange={(e) => editarCampo(p.id!, "precio", Number(e.target.value))} />
                   </td>
-                  <td style={{ padding: "8px", border: "1px solid #ccc" }}>
-                    <input type="number" value={p.stock} onChange={(e) => setProductos((prev) => prev.map((x) => x.id === p.id ? { ...x, stock: Number(e.target.value) } : x))} />
+                  <td style={cellStyle}>
+                    <input type="number" value={p.stock} onChange={(e) => editarCampo(p.id!, "stock", Number(e.target.value))} />
                   </td>
-                  <td style={{ padding: "8px", border: "1px solid #ccc" }}>
-                    <input value={p.categoria || ""} onChange={(e) => setProductos((prev) => prev.map((x) => x.id === p.id ? { ...x, categoria: e.target.value } : x))} />
+                  <td style={cellStyle}>
+                    <input value={p.categoria || ""} onChange={(e) => editarCampo(p.id!, "categoria", e.target.value)} />
                   </td>
-                  <td style={{ padding: "8px", border: "1px solid #ccc" }}>
-                    <button onClick={() => actualizarProducto(p)} style={{ backgroundColor: "#4CAF50", color: "white", border: "none", padding: "5px 10px", borderRadius: "4px", cursor: "pointer" }}>
-                      💾 Guardar
-                    </button>
+                  <td style={cellStyle}>
+                    <select value={p.tipo} onChange={(e) => editarCampo(p.id!, "tipo", e.target.value)}>
+                      <option value="producto">Producto</option>
+                      <option value="servicio">Servicio</option>
+                    </select>
+                  </td>
+                  <td style={cellStyle}>
+                    <input type="checkbox" checked={p.envioGratis || false} onChange={(e) => editarCampo(p.id!, "envioGratis", e.target.checked)} />
+                  </td>
+                  <td style={cellStyle}>
+                    <input value={p.cuotas || ""} onChange={(e) => editarCampo(p.id!, "cuotas", e.target.value)} />
+                  </td>
+                  <td style={cellStyle}>
+                    <button onClick={() => actualizarProducto(p)} style={btnStyle("green")}>💾</button>
+                    <button onClick={() => deleteProduct(p.id!)} style={btnStyle("red")}>🗑️</button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+
+
         </>
       )}
       {/* 🎨 Sección: Estética */}
@@ -415,28 +513,28 @@ export default function Admin() {
       )}
 
 
-{ seccionActiva === "pagos" && (
-    <>
-      <h3>Configuración de pagos</h3>
-      <p>Ingresá tu token de acceso de Mercado Pago (Access Token):</p>
-      <input
-        value={mercadoPagoToken}
-        onChange={(e) => setMercadoPagoToken(e.target.value)}
-        style={{ width: "100%", marginBottom: "1rem" }}
-      />
-      <button onClick={guardarConfiguracion}>💾 Guardar token</button>
-      <p style={{ marginTop: "1rem", fontSize: "0.9rem", color: "#555" }}>
-        Podés obtener tu access token desde:{" "}
-        <a
-          href="https://www.mercadopago.com.ar/developers/panel/app/3047697102060940/credentials/sandbox"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Mercado Pago Developers
-        </a>
-      </p>
-    </>
-  )}
+      {seccionActiva === "pagos" && (
+        <>
+          <h3>Configuración de pagos</h3>
+          <p>Ingresá tu token de acceso de Mercado Pago (Access Token):</p>
+          <input
+            value={mercadoPagoToken}
+            onChange={(e) => setMercadoPagoToken(e.target.value)}
+            style={{ width: "100%", marginBottom: "1rem" }}
+          />
+          <button onClick={guardarConfiguracion}>💾 Guardar token</button>
+          <p style={{ marginTop: "1rem", fontSize: "0.9rem", color: "#555" }}>
+            Podés obtener tu access token desde:{" "}
+            <a
+              href="https://www.mercadopago.com.ar/developers/panel/app/3047697102060940/credentials/sandbox"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Mercado Pago Developers
+            </a>
+          </p>
+        </>
+      )}
 
       {/* 🔔 Sección: Notificaciones */}
       {seccionActiva === "notificaciones" && (
@@ -474,6 +572,6 @@ export default function Admin() {
           </ul>
         </>
       )}
-    </div> 
+    </div>
   );
 }

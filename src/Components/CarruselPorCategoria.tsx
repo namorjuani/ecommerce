@@ -63,7 +63,17 @@ export default function CarruselPorCategoria({ categoria, productos, carruselId 
                         />
                         <h4>{producto.nombre}</h4>
                         <p style={{ fontWeight: "bold" }}>${producto.precio}</p>
-                        {producto.stock === 0 && <p style={{ color: "red", fontWeight: "bold" }}>Sin stock</p>}
+
+                        {(producto as any).envioGratis && (
+                            <p style={{ color: "green", fontWeight: "bold", fontSize: "0.85rem" }}>
+                                Envío gratis
+                            </p>
+                        )}
+
+                        {producto.stock === 0 && (
+                            <p style={{ color: "red", fontWeight: "bold" }}>Sin stock</p>
+                        )}
+
                     </Link>
                 ))}
             </div>
