@@ -6,7 +6,6 @@ import { useCliente } from "../context/ClienteContext";
 import "./css/Home.css";
 import CarruselPorCategoria from "../Components/CarruselPorCategoria";
 
-
 interface Producto {
   id: string;
   nombre: string;
@@ -23,7 +22,6 @@ export default function Home() {
   const [whatsapp, setWhatsapp] = useState("");
   const [mostrarMenu, setMostrarMenu] = useState(false);
 
-  // 🎨 Configuración del banner
   const [alturaBanner, setAlturaBanner] = useState("100px");
   const [posicionBanner, setPosicionBanner] = useState("center");
   const [tamañoBanner, setTamañoBanner] = useState("cover");
@@ -33,8 +31,8 @@ export default function Home() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const tiendaId = localStorage.getItem("userId");
-      if (!tiendaId) return;
+      const tiendaId = "d5gnEacrofgn8NxTOdRgwzZRow73"; // 👈 Tu UID real
+      localStorage.setItem("userId", tiendaId); // Guardado por si lo necesitás en otras pantallas
 
       const ref = doc(db, "tiendas", tiendaId);
       const snap = await getDoc(ref);
@@ -51,11 +49,14 @@ export default function Home() {
       const productosRef = collection(db, "tiendas", tiendaId, "productos");
       const q = query(productosRef);
       const querySnapshot = await getDocs(q);
+
       const productosData: Producto[] = querySnapshot.docs.map((doc) => ({
-        
         ...(doc.data() as Producto),
         id: doc.id,
       }));
+
+      console.log("✅ Productos en Firestore:", querySnapshot.docs.map((d) => d.data()));
+      console.log("✅ Productos mapeados:", productosData);
       setProductos(productosData);
     };
 
@@ -64,7 +65,6 @@ export default function Home() {
 
   return (
     <div className="home-container">
-      {/* Navbar */}
       <div className="navbar">
         <div style={{ fontWeight: "bold" }}>{nombre}</div>
         <div>
@@ -88,11 +88,7 @@ export default function Home() {
                   <img
                     src={cliente.photoURL}
                     alt="Perfil"
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      borderRadius: "50%",
-                    }}
+                    style={{ width: "100%", height: "100%", borderRadius: "50%" }}
                   />
                 ) : (
                   <span>
@@ -118,48 +114,9 @@ export default function Home() {
                     zIndex: 999,
                   }}
                 >
-                  <button
-                    style={{
-                      display: "block",
-                      padding: "0.7rem 1rem",
-                      width: "100%",
-                      textAlign: "left",
-                      border: "none",
-                      background: "none",
-                      cursor: "pointer",
-                    }}
-                    onClick={() => navigate("/historial")}
-                  >
-                    🧾 Historial de compras
-                  </button>
-                  <button
-                    style={{
-                      display: "block",
-                      padding: "0.7rem 1rem",
-                      width: "100%",
-                      textAlign: "left",
-                      border: "none",
-                      background: "none",
-                      cursor: "pointer",
-                    }}
-                    onClick={() => navigate("/datos-envio")}
-                  >
-                    📦 Datos de envío
-                  </button>
-                  <button
-                    style={{
-                      display: "block",
-                      padding: "0.7rem 1rem",
-                      width: "100%",
-                      textAlign: "left",
-                      borderTop: "1px solid #eee",
-                      background: "none",
-                      cursor: "pointer",
-                    }}
-                    onClick={cerrarSesion}
-                  >
-                    🚪 Cerrar sesión
-                  </button>
+                  <button onClick={() => navigate("/historial")}>🧾 Historial de compras</button>
+                  <button onClick={() => navigate("/datos-envio")}>📦 Datos de envío</button>
+                  <button onClick={cerrarSesion}>🚪 Cerrar sesión</button>
                 </div>
               )}
             </div>
@@ -171,7 +128,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Hero/banner como fondo */}
+      {/* Banner */}
       <div
         style={{
           backgroundImage: `url(${imagen})`,
@@ -203,7 +160,8 @@ export default function Home() {
           />
         ))}
       </div>
-      {/* Botón flotante de WhatsApp */}
+
+      {/* WhatsApp */}
       {whatsapp && (
         <a
           href={`https://wa.me/${whatsapp.replace(/\D/g, "")}`}

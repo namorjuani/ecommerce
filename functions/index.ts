@@ -1,3 +1,3 @@
 import { crearPreferencia } from "./mercadoPago";
 
-exports.crearPreferencia = crearPreferencia;
+export const crearPreferenciaFunction = crearPreferencia;

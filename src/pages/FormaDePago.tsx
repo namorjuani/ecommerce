@@ -1,8 +1,9 @@
-// src/pages/FormaDePago.tsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { useCarrito } from "../context/CarritoContext";
+import { db } from "../firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 declare global {
   interface Window {
@@ -15,26 +16,39 @@ export default function FormaDePago() {
   const [carrito, setCarrito] = useState<any[]>([]);
   const navigate = useNavigate();
   const { vaciarCarrito } = useCarrito();
-  const [mp, setMp] = useState<any>(null);
+  const [publicKey, setPublicKey] = useState("");
 
   useEffect(() => {
-    if (window.MercadoPago) {
-      const mpInstance = new window.MercadoPago("TEST-02545aaf-26ee-412a-adf6-411b7dd63808", {
-        locale: "es-AR",
-      });
-      setMp(mpInstance);
-    }
-  }, []);
+    const userId = localStorage.getItem("userId");
+    if (!userId) return;
+
+    // Cargar publicKey desde Firebase
+    const cargarConfig = async () => {
+      const ref = doc(db, "tiendas", userId);
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        const data = snap.data();
+        setPublicKey(data.publicKeyMP || "");
+      }
+    };
+
+    cargarConfig();
+
+    // Cargar SDK
+    const script = document.createElement("script");
+    script.src = "https://sdk.mercadopago.com/js/v2";
+    script.async = true;
+    script.onload = () => {
+      if (window.MercadoPago && publicKey) {
+        new window.MercadoPago(publicKey, { locale: "es-AR" });
+      }
+    };
+    document.body.appendChild(script);
+  }, [publicKey]);
 
   useEffect(() => {
     const data = localStorage.getItem("carrito");
     if (data) setCarrito(JSON.parse(data));
-
-    // SDK MercadoPago
-    const script = document.createElement("script");
-    script.src = "https://sdk.mercadopago.com/js/v2";
-    script.async = true;
-    document.body.appendChild(script);
   }, []);
 
   const total = carrito.reduce((sum, prod) => sum + prod.precio * (prod.cantidad || 1), 0);
@@ -66,7 +80,7 @@ export default function FormaDePago() {
 
       try {
         const response = await fetch(
-          "https://us-central1-applavaderoartesanal.cloudfunctions.net/crearPreferencia", // ⚠️ Reemplazá con tu URL real
+          "https://us-central1-applavaderoartesanal.cloudfunctions.net/crearPreferenciaFunction",
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -78,7 +92,7 @@ export default function FormaDePago() {
 
         if (!data.preferenceId) throw new Error("No se obtuvo preferenceId");
 
-        // Redirección simple al init_point de Mercado Pago
+        // Redirigir al checkout de Mercado Pago
         window.location.href = `https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=${data.preferenceId}`;
 
         localStorage.removeItem("carrito");

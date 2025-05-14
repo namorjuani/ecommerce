@@ -37,55 +37,58 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.crearPreferencia = void 0;
-// functions/mercadoPago.ts
+const cors_1 = __importDefault(require("cors"));
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const axios_1 = __importDefault(require("axios"));
-admin.initializeApp();
-exports.crearPreferencia = functions.https.onRequest(async (req, res) => {
-    const { productos, tiendaId } = req.body;
-    // CORS
-    res.set("Access-Control-Allow-Origin", "*");
-    res.set("Access-Control-Allow-Headers", "Content-Type");
-    if (req.method === "OPTIONS") {
-        res.status(204).send("");
-        return;
-    }
-    try {
-        const docRef = admin.firestore().doc(`tiendas/${tiendaId}`);
-        const docSnap = await docRef.get();
-        if (!docSnap.exists) {
-            res.status(404).send("Tienda no encontrada");
+const corsHandler = (0, cors_1.default)({ origin: true });
+if (!admin.apps.length) {
+    admin.initializeApp();
+}
+exports.crearPreferencia = functions.https.onRequest((req, res) => {
+    corsHandler(req, res, async () => {
+        const { productos, tiendaId } = req.body;
+        if (!productos || !tiendaId) {
+            res.status(400).json({ error: "Faltan datos requeridos." });
             return;
         }
-        const { mercadoPagoToken } = docSnap.data() || {};
-        if (!mercadoPagoToken) {
-            res.status(400).send("La tienda no tiene cargado su token de Mercado Pago");
-            return;
+        try {
+            const docRef = admin.firestore().doc(`tiendas/${tiendaId}`);
+            const docSnap = await docRef.get();
+            if (!docSnap.exists) {
+                res.status(404).send("Tienda no encontrada");
+                return;
+            }
+            const data = docSnap.data();
+            const mercadoPagoToken = data?.mercadoPagoToken;
+            if (!mercadoPagoToken) {
+                res.status(400).send("La tienda no tiene cargado su token de Mercado Pago");
+                return;
+            }
+            const items = productos.map((prod) => ({
+                title: prod.nombre,
+                unit_price: prod.precio,
+                quantity: prod.cantidad || 1,
+                currency_id: "ARS",
+            }));
+            const response = await axios_1.default.post("https://api.mercadopago.com/checkout/preferences", {
+                items,
+                back_urls: {
+                    success: "https://applavaderoartesanal.web.app/compra-realizada",
+                    failure: "https://applavaderoartesanal.web.app/error",
+                    pending: "https://applavaderoartesanal.web.app/pending",
+                },
+                auto_return: "approved",
+            }, {
+                headers: {
+                    Authorization: `Bearer ${mercadoPagoToken}`,
+                },
+            });
+            res.json({ preferenceId: response.data.id });
         }
-        const items = productos.map((prod) => ({
-            title: prod.nombre,
-            unit_price: prod.precio,
-            quantity: prod.cantidad || 1,
-            currency_id: "ARS",
-        }));
-        const response = await axios_1.default.post("https://api.mercadopago.com/checkout/preferences", {
-            items,
-            back_urls: {
-                success: "https://tu-dominio.com/compra-realizada",
-                failure: "https://tu-dominio.com/error",
-                pending: "https://tu-dominio.com/pending",
-            },
-            auto_return: "approved",
-        }, {
-            headers: {
-                Authorization: `Bearer ${mercadoPagoToken}`,
-            },
-        });
-        res.status(200).json({ preferenceId: response.data.id });
-    }
-    catch (error) {
-        console.error("Error al crear preferencia:", error);
-        res.status(500).send("Error al crear preferencia");
-    }
+        catch (error) {
+            console.error("Error al crear preferencia:", error);
+            res.status(500).send("Error al crear preferencia");
+        }
+    });
 });

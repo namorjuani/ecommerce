@@ -1,5 +1,6 @@
 // src/pages/Admin.tsx
 import "./css/Admin.css";
+import ImportadorCSV from "./ImportadorCSV";
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { Link } from "react-router-dom";
@@ -56,14 +57,10 @@ export default function Admin() {
 
   const [seccionActiva, setSeccionActiva] = useState("productos");
 
-  // filtros productos
   const [filtroNombre, setFiltroNombre] = useState("");
   const [ordenPrecio, setOrdenPrecio] = useState<"" | "asc" | "desc">("");
   const [filtroCategoria, setFiltroCategoria] = useState("");
 
-  
-
-  // configuración estética
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [imagen, setImagen] = useState("");
@@ -73,12 +70,12 @@ export default function Admin() {
   const [colorBoton, setColorBoton] = useState("#000000");
   const [whatsapp, setWhatsapp] = useState("");
 
-  // notificaciones
   const [correoNotificacion, setCorreoNotificacion] = useState("");
   const [whatsappNotificacion, setWhatsappNotificacion] = useState("");
   const [recibirPorCorreo, setRecibirPorCorreo] = useState(false);
   const [recibirPorWhatsapp, setRecibirPorWhatsapp] = useState(false);
   const [mercadoPagoToken, setMercadoPagoToken] = useState("");
+  const [publicKeyMP, setPublicKeyMP] = useState("");
 
   useEffect(() => {
     if (!usuario) return;
@@ -101,18 +98,19 @@ export default function Admin() {
         setRecibirPorCorreo(data.recibirPorCorreo || false);
         setRecibirPorWhatsapp(data.recibirPorWhatsapp || false);
         setMercadoPagoToken(data.mercadoPagoToken || "");
+        setPublicKeyMP(data.publicKeyMP || "");
       }
-const productosRef = collection(db, "tiendas", usuario.uid, "productos");
-    const snapshot = await getDocs(productosRef);
-    const lista = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as Producto[];
-    setProductos(lista);
-  };
+      const productosRef = collection(db, "tiendas", usuario.uid, "productos");
+      const snapshot = await getDocs(productosRef);
+      const lista = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Producto[];
+      setProductos(lista);
+    };
 
-  cargarDatos();
-}, [usuario]);
+    cargarDatos();
+  }, [usuario]);
 
   const guardarConfiguracion = async () => {
     if (!usuario) return;
@@ -130,7 +128,8 @@ const productosRef = collection(db, "tiendas", usuario.uid, "productos");
       whatsappNotificacion,
       recibirPorCorreo,
       recibirPorWhatsapp,
-      mercadoPagoToken, // 🔹 Agregalo acá
+      mercadoPagoToken,
+      publicKeyMP,
     }, { merge: true });
     alert("Configuración guardada");
   };
@@ -203,27 +202,50 @@ const productosRef = collection(db, "tiendas", usuario.uid, "productos");
 ))}
       </div>
 
-      {/* 💳 Sección: Pagos (Mercado Pago) */}
-{seccionActiva === "pagos" && (
+  { seccionActiva === "pagos" && (
   <>
-    <h3>Configuración de Mercado Pago</h3>
-    <p>Pegá tu token privado de Mercado Pago para poder cobrar automáticamente.</p>
+    <h3>Configuración de pagos</h3>
+
+    <label>Access Token de Mercado Pago (privado)</label>
     <input
-      type="text"
-      placeholder="Token privado de Mercado Pago"
       value={mercadoPagoToken}
       onChange={(e) => setMercadoPagoToken(e.target.value)}
-      style={{ width: "100%", marginBottom: "1rem", padding: "0.5rem" }}
+      placeholder="ACCESS_TOKEN"
+      style={{ width: "100%", marginBottom: "1rem" }}
     />
-    <button onClick={guardarConfiguracion} style={{ backgroundColor: "#3483fa", color: "white", padding: "0.6rem 1.5rem", border: "none", borderRadius: "6px", cursor: "pointer" }}>
-      💾 Guardar token
+
+    <label>Public Key de Mercado Pago (pública)</label>
+    <input
+      value={publicKeyMP}
+      onChange={(e) => setPublicKeyMP(e.target.value)}
+      placeholder="PUBLIC_KEY"
+      style={{ width: "100%", marginBottom: "1rem" }}
+    />
+
+    <button onClick={guardarConfiguracion} style={{ backgroundColor: "#3483fa", color: "white", border: "none", padding: "0.6rem 1.5rem", borderRadius: "6px", cursor: "pointer" }}>
+      💾 Guardar configuración
     </button>
+
+    <p style={{ marginTop: "1rem", fontSize: "0.9rem", color: "#555" }}>
+      Podés obtener tus claves desde:{" "}
+      <a
+        href="https://www.mercadopago.com.ar/developers/panel/app/3047697102060940/credentials/sandbox"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Mercado Pago Developers
+      </a>
+    </p>
   </>
 )}
+
 
       {/* 🛒 Sección: Productos */}
       {seccionActiva === "productos" && (
         <>
+        {/* 📁 Importador de productos por CSV */}
+<ImportadorCSV limite={50} />
+
           <h3>Agregar producto nuevo</h3>
 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "2rem" }}>
   <label>Nombre
