@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useCliente } from "../context/ClienteContext";
 import "./css/Home.css";
 import CarruselPorCategoria from "../Components/CarruselPorCategoria";
+import CategoriasDestacadas from "../Components/CategoriasDestacadas";
 
 interface Producto {
   id: string;
@@ -13,7 +14,11 @@ interface Producto {
   imagen: string;
   stock?: number;
   categoria: string;
+  tipo: "producto" | "servicio";
+  precioReserva?: number;
+  precioTotal?: number;
 }
+
 
 export default function Home() {
   const [nombre, setNombre] = useState("Mi tienda");
@@ -31,8 +36,8 @@ export default function Home() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const tiendaId = "d5gnEacrofgn8NxTOdRgwzZRow73"; // 👈 Tu UID real
-      localStorage.setItem("userId", tiendaId); // Guardado por si lo necesitás en otras pantallas
+      const tiendaId = localStorage.getItem("userId") || "d5gnEacrofgn8NxTOdRgwzZRow73";
+      localStorage.setItem("userId", tiendaId);
 
       const ref = doc(db, "tiendas", tiendaId);
       const snap = await getDoc(ref);
@@ -140,7 +145,8 @@ export default function Home() {
           position: "relative",
         }}
       />
-
+      {/* 🔹 Acá van las categorías destacadas */}
+      <CategoriasDestacadas />
       {/* Productos */}
       <div className="productos">
         <h2>Productos por categoría</h2>
@@ -150,6 +156,7 @@ export default function Home() {
             acc[cat] = acc[cat] || [];
             acc[cat].push(prod);
             return acc;
+
           }, {})
         ).map(([categoria, productosCat], i) => (
           <CarruselPorCategoria

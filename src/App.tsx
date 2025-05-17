@@ -14,6 +14,9 @@ import FormaEntrega from "./pages/FormaEntrega";
 import FormaDePago from "./pages/FormaDePago"; // ✅ IMPORTANTE
 import { ClienteProvider } from "./context/ClienteContext";
 import DatosEnvio from "./pages/DatosEnvio";
+import AgendarServicio from "./pages/AgendarServicio";
+import CheckoutReserva from "./pages/CheckoutReserva"; // ajustá la ruta si está en otra carpeta
+
 
 export default function App() {
   return (
@@ -31,6 +34,8 @@ export default function App() {
                 <Route path="/forma-pago" element={<FormaDePago />} />
                 <Route path="/compra-realizada" element={<CompraRealizada />} />
                 <Route path="/datos-envio" element={<DatosEnvio />} />
+                <Route path="/agendar-servicio/:id" element={<AgendarServicio />} />
+                <Route path="/checkout-reserva" element={<CheckoutReserva />} />
                 {/* ✅ nueva ruta */}
                 <Route
                   path="/admin"

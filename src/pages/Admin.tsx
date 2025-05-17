@@ -18,6 +18,14 @@ import { deleteDoc } from "firebase/firestore";
 import Swal from "sweetalert2";
 
 
+interface Reserva {
+  id?: string;
+  clienteNombre: string;
+  productoNombre: string;
+  fecha: string; // "YYYY-MM-DD"
+  hora: string;  // "10:00", "11:00", etc.
+  estado: "pendiente" | "aceptado" | "rechazado";
+}
 
 interface Producto {
   id?: string;
@@ -37,7 +45,11 @@ interface Producto {
     nombre: string;
     stock: number;
   }[];
+  precioReserva?: number;
+  precioTotal?: number;
 }
+[];
+
 
 export default function Admin() {
   const { usuario } = useAuth();
@@ -57,6 +69,9 @@ export default function Admin() {
     tipo: "producto",
     categoria: "",
     variantes: [],
+    precioReserva: 0,
+    precioTotal: 0,
+
   });
 
   const [seccionActiva, setSeccionActiva] = useState("productos");
@@ -80,6 +95,10 @@ export default function Admin() {
   const [recibirPorWhatsapp, setRecibirPorWhatsapp] = useState(false);
   const [mercadoPagoToken, setMercadoPagoToken] = useState("");
   const [publicKeyMP, setPublicKeyMP] = useState("");
+  const [reservas, setReservas] = useState<any[]>([]);
+  const [aceptarReservasAuto, setAceptarReservasAuto] = useState(false);
+  const [whatsappReservas, setWhatsappReservas] = useState("");
+
 
   const cellStyle = {
     padding: "8px",
@@ -87,15 +106,15 @@ export default function Admin() {
   };
 
   const btnStyle = (color: "green" | "red") => ({
-  backgroundColor: color === "green" ? "#4CAF50" : "red",
-  color: "white",
-  border: "none",
-  padding: "10px 14px",
-  fontSize: "1.1rem",
-  borderRadius: "6px",
-  marginRight: "6px",
-  cursor: "pointer",
-});
+    backgroundColor: color === "green" ? "#4CAF50" : "red",
+    color: "white",
+    border: "none",
+    padding: "10px 14px",
+    fontSize: "1.1rem",
+    borderRadius: "6px",
+    marginRight: "6px",
+    cursor: "pointer",
+  });
 
 
   const editarCampo = (id: string, campo: string, valor: any) => {
@@ -113,6 +132,8 @@ export default function Admin() {
       const configSnap = await getDoc(configRef);
       if (configSnap.exists()) {
         const data = configSnap.data();
+        setWhatsappReservas(data.whatsappReservas || "");
+        setAceptarReservasAuto(data.aceptarReservasAuto || false);
         setNombre(data.nombre || "");
         setDescripcion(data.descripcion || "");
         setImagen(data.imagen || "");
@@ -140,6 +161,28 @@ export default function Admin() {
     cargarDatos();
   }, [usuario]);
 
+  const cargarReservas = async () => {
+    if (!usuario) return;
+    const reservasRef = collection(db, "tiendas", usuario.uid, "reservas");
+    const reservasSnap = await getDocs(reservasRef);
+    const reservasData = reservasSnap.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    setReservas(reservasData as any); // podés tipar mejor si tenés la interfaz
+  };
+
+  cargarReservas();
+
+  const cambiarEstadoReserva = async (id: string, nuevoEstado: "aceptado" | "rechazado") => {
+    if (!usuario || !id) return;
+    const ref = doc(db, "tiendas", usuario.uid, "reservas", id);
+    await updateDoc(ref, { estado: nuevoEstado });
+    setReservas(prev => prev.map(r => r.id === id ? { ...r, estado: nuevoEstado } : r));
+  };
+
+
+
   const guardarConfiguracion = async () => {
     if (!usuario) return;
     const ref = doc(db, "tiendas", usuario.uid);
@@ -158,7 +201,10 @@ export default function Admin() {
       recibirPorWhatsapp,
       mercadoPagoToken,
       publicKeyMP,
+      whatsappReservas,
+      aceptarReservasAuto,
     }, { merge: true });
+
     alert("Configuración guardada");
   };
 
@@ -185,50 +231,56 @@ export default function Admin() {
   };
 
   const actualizarProducto = async (producto: Producto) => {
-  if (!usuario || !producto.id) return;
-  const ref = doc(db, "tiendas", usuario.uid, "productos", producto.id);
-  const { id, ...data } = producto;
-  await updateDoc(ref, data);
-  Swal.fire({
-    icon: "success",
-    title: "Producto actualizado",
-    text: "Los cambios se guardaron correctamente.",
-    timer: 2000,
-    showConfirmButton: false,
-  });
-};
+    if (!usuario || !producto.id) return;
+    const ref = doc(db, "tiendas", usuario.uid, "productos", producto.id);
+    const { id, ...data } = producto;
+    await updateDoc(ref, data);
+    Swal.fire({
+      icon: "success",
+      title: "Producto actualizado",
+      text: "Los cambios se guardaron correctamente.",
+      timer: 2000,
+      showConfirmButton: false,
+    });
+  };
 
 
   const deleteProduct = async (productId: string) => {
-  const confirm = await Swal.fire({
-    title: "¿Estás seguro?",
-    text: "Esta acción eliminará el producto permanentemente.",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonColor: "#d33",
-    cancelButtonColor: "#aaa",
-    confirmButtonText: "Sí, eliminar",
-    cancelButtonText: "Cancelar",
-  });
-
-  if (confirm.isConfirmed && usuario) {
-    const ref = doc(db, "tiendas", usuario.uid, "productos", productId);
-    await deleteDoc(ref);
-    setProductos((prev) => prev.filter((p) => p.id !== productId));
-    Swal.fire("Eliminado", "El producto ha sido eliminado.", "success");
-  }
-};
-
-
-
-  const productosFiltrados = productos
-    .filter(p => p.nombre.toLowerCase().includes(filtroNombre.toLowerCase()))
-    .filter(p => filtroCategoria ? p.categoria === filtroCategoria : true)
-    .sort((a, b) => {
-      if (ordenPrecio === "asc") return a.precio - b.precio;
-      if (ordenPrecio === "desc") return b.precio - a.precio;
-      return 0;
+    const confirm = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: "Esta acción eliminará el producto permanentemente.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#aaa",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
     });
+
+    if (confirm.isConfirmed && usuario) {
+      const ref = doc(db, "tiendas", usuario.uid, "productos", productId);
+      await deleteDoc(ref);
+      setProductos((prev) => prev.filter((p) => p.id !== productId));
+      Swal.fire("Eliminado", "El producto ha sido eliminado.", "success");
+    }
+  };
+
+
+
+ const productosFiltrados = productos
+  .filter((p) =>
+    p.nombre.toLowerCase().includes(filtroNombre.toLowerCase())
+  )
+  .filter((p) =>
+    filtroCategoria
+      ? (p.categoria || "").toLowerCase().includes(filtroCategoria.toLowerCase())
+      : true
+  )
+  .sort((a, b) => {
+    if (ordenPrecio === "asc") return a.precio - b.precio;
+    if (ordenPrecio === "desc") return b.precio - a.precio;
+    return 0;
+  });
 
   const categorias = Array.from(new Set(productos.map(p => p.categoria).filter(Boolean)));
 
@@ -242,7 +294,7 @@ export default function Admin() {
 
       {/* 🧭 Menú de navegación */}
       <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem", borderBottom: "1px solid #ccc", paddingBottom: "1rem" }}>
-        {["productos", "estetica", "notificaciones", "pagos", "ayuda"].map((seccion) => (
+        {["productos", "reservas", "estetica", "notificaciones", "pagos", "ayuda"].map((seccion) => (
           <button
             key={seccion}
             onClick={() => setSeccionActiva(seccion)}
@@ -309,9 +361,43 @@ export default function Admin() {
             <label>Nombre
               <input value={nuevo.nombre} onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })} />
             </label>
-            <label>Precio
-              <input type="number" value={nuevo.precio} onChange={(e) => setNuevo({ ...nuevo, precio: Number(e.target.value) })} />
-            </label>
+            {nuevo.tipo === "producto" && (
+  <label>Precio
+    <input
+      type="number"
+      value={nuevo.precio}
+      onChange={(e) =>
+        setNuevo({ ...nuevo, precio: Number(e.target.value) })
+      }
+    />
+  </label>
+)}
+
+{nuevo.tipo === "servicio" && (
+  <>
+    <label>Precio de reserva
+      <input
+        type="number"
+        value={nuevo.precioReserva || 0}
+        onChange={(e) =>
+          setNuevo({ ...nuevo, precioReserva: Number(e.target.value) })
+        }
+      />
+    </label>
+    <label>Precio total del servicio
+      <input
+        type="number"
+        value={nuevo.precioTotal || 0}
+        onChange={(e) =>
+          setNuevo({ ...nuevo, precioTotal: Number(e.target.value) })
+        }
+      />
+    </label>
+  </>
+)}
+
+
+
             <label>Imagen principal
               <input value={nuevo.imagen} onChange={(e) => setNuevo({ ...nuevo, imagen: e.target.value })} />
             </label>
@@ -398,80 +484,125 @@ export default function Admin() {
             ➕ Agregar producto
           </button>
 
-          <h3>Modificar productos existentes</h3>
 
-          {/* 🔎 Filtros de búsqueda */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", marginBottom: "1rem" }}>
-            <input
-              type="text"
-              placeholder="Buscar por nombre"
-              value={filtroNombre}
-              onChange={(e) => setFiltroNombre(e.target.value)}
-              style={{ flex: "1", padding: "0.4rem" }}
-            />
-            <select value={ordenPrecio} onChange={(e) => setOrdenPrecio(e.target.value as any)} style={{ padding: "0.4rem" }}>
-              <option value="">Ordenar por precio</option>
-              <option value="asc">Menor a mayor</option>
-              <option value="desc">Mayor a menor</option>
+<h3>Modificar productos existentes</h3>
+
+<div style={{ maxWidth: "1000px", margin: "0 auto", padding: "0 1rem" }}>
+
+  {/* 🔎 Filtros de búsqueda */}
+  <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", marginBottom: "1rem" }}>
+    <input
+      type="text"
+      placeholder="Buscar por nombre"
+      value={filtroNombre}
+      onChange={(e) => setFiltroNombre(e.target.value)}
+      style={{ flex: "1", padding: "0.4rem" }}
+    />
+
+    <select
+      value={ordenPrecio}
+      onChange={(e) => setOrdenPrecio(e.target.value as any)}
+      style={{ padding: "0.4rem" }}
+    >
+      <option value="">Ordenar por precio</option>
+      <option value="asc">Menor a mayor</option>
+      <option value="desc">Mayor a menor</option>
+    </select>
+
+    <input
+      type="text"
+      placeholder="Filtrar por categoría"
+      list="categorias-sugeridas"
+      value={filtroCategoria}
+      onChange={(e) => setFiltroCategoria(e.target.value)}
+      style={{ flex: "1", padding: "0.4rem" }}
+    />
+    <datalist id="categorias-sugeridas">
+      {categorias.map((cat, idx) => (
+        <option key={idx} value={cat} />
+      ))}
+    </datalist>
+  </div>
+
+  {/* 🧾 Tabla de productos */}
+  <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "1rem" }}>
+    <thead>
+      <tr style={{ background: "#f0f0f0", textAlign: "left" }}>
+        <th style={cellStyle}>Nombre</th>
+        <th style={cellStyle}>Precio</th>
+        <th style={cellStyle}>Reserva</th>
+        <th style={cellStyle}>Precio Total</th>
+        <th style={cellStyle}>Stock</th>
+        <th style={cellStyle}>Categoría</th>
+        <th style={cellStyle}>Tipo</th>
+        <th style={cellStyle}>Envío Gratis</th>
+        <th style={cellStyle}>Cuotas</th>
+        <th style={cellStyle}>Acción</th>
+      </tr>
+    </thead>
+    <tbody>
+      {productosFiltrados.map((p) => (
+        <tr key={p.id}>
+          <td style={cellStyle}>
+            <input value={p.nombre} onChange={(e) => editarCampo(p.id!, "nombre", e.target.value)} />
+          </td>
+
+          <td style={cellStyle}>
+            {p.tipo === "producto" ? (
+              <input type="number" value={p.precio} onChange={(e) => editarCampo(p.id!, "precio", Number(e.target.value))} />
+            ) : (
+              "-"
+            )}
+          </td>
+
+          <td style={cellStyle}>
+            {p.tipo === "servicio" ? (
+              <input type="number" value={p.precioReserva || 0} onChange={(e) => editarCampo(p.id!, "precioReserva", Number(e.target.value))} />
+            ) : (
+              "-"
+            )}
+          </td>
+
+          <td style={cellStyle}>
+            {p.tipo === "servicio" ? (
+              <input type="number" value={p.precioTotal || 0} onChange={(e) => editarCampo(p.id!, "precioTotal", Number(e.target.value))} />
+            ) : (
+              "-"
+            )}
+          </td>
+
+          <td style={cellStyle}>
+            <input type="number" value={p.stock} onChange={(e) => editarCampo(p.id!, "stock", Number(e.target.value))} />
+          </td>
+
+          <td style={cellStyle}>
+            <input value={p.categoria || ""} onChange={(e) => editarCampo(p.id!, "categoria", e.target.value)} />
+          </td>
+
+          <td style={cellStyle}>
+            <select value={p.tipo} onChange={(e) => editarCampo(p.id!, "tipo", e.target.value)}>
+              <option value="producto">Producto</option>
+              <option value="servicio">Servicio</option>
             </select>
-            <input
-              type="text"
-              placeholder="Filtrar por categoría"
-              value={filtroCategoria}
-              onChange={(e) => setFiltroCategoria(e.target.value)}
-              style={{ flex: "1", padding: "0.4rem" }}
-            />
-          </div>
+          </td>
 
-          {/* 🧾 Tabla de productos */}
-          <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "1rem" }}>
-            <thead>
-              <tr style={{ background: "#f0f0f0", textAlign: "left" }}>
-                <th style={cellStyle}>Nombre</th>
-                <th style={cellStyle}>Precio</th>
-                <th style={cellStyle}>Stock</th>
-                <th style={cellStyle}>Categoría</th>
-                <th style={cellStyle}>Tipo</th>
-                <th style={cellStyle}>Envío Gratis</th>
-                <th style={cellStyle}>Cuotas</th>
-                <th style={cellStyle}>Acción</th>
-              </tr>
-            </thead>
-            <tbody>
-              {productosFiltrados.map((p) => (
-                <tr key={p.id}>
-                  <td style={cellStyle}>
-                    <input value={p.nombre} onChange={(e) => editarCampo(p.id!, "nombre", e.target.value)} />
-                  </td>
-                  <td style={cellStyle}>
-                    <input type="number" value={p.precio} onChange={(e) => editarCampo(p.id!, "precio", Number(e.target.value))} />
-                  </td>
-                  <td style={cellStyle}>
-                    <input type="number" value={p.stock} onChange={(e) => editarCampo(p.id!, "stock", Number(e.target.value))} />
-                  </td>
-                  <td style={cellStyle}>
-                    <input value={p.categoria || ""} onChange={(e) => editarCampo(p.id!, "categoria", e.target.value)} />
-                  </td>
-                  <td style={cellStyle}>
-                    <select value={p.tipo} onChange={(e) => editarCampo(p.id!, "tipo", e.target.value)}>
-                      <option value="producto">Producto</option>
-                      <option value="servicio">Servicio</option>
-                    </select>
-                  </td>
-                  <td style={cellStyle}>
-                    <input type="checkbox" checked={p.envioGratis || false} onChange={(e) => editarCampo(p.id!, "envioGratis", e.target.checked)} />
-                  </td>
-                  <td style={cellStyle}>
-                    <input value={p.cuotas || ""} onChange={(e) => editarCampo(p.id!, "cuotas", e.target.value)} />
-                  </td>
-                  <td style={cellStyle}>
-                    <button onClick={() => actualizarProducto(p)} style={btnStyle("green")}>💾</button>
-                    <button onClick={() => deleteProduct(p.id!)} style={btnStyle("red")}>🗑️</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <td style={cellStyle}>
+            <input type="checkbox" checked={p.envioGratis || false} onChange={(e) => editarCampo(p.id!, "envioGratis", e.target.checked)} />
+          </td>
+
+          <td style={cellStyle}>
+            <input value={p.cuotas || ""} onChange={(e) => editarCampo(p.id!, "cuotas", e.target.value)} />
+          </td>
+
+          <td style={cellStyle}>
+            <button onClick={() => actualizarProducto(p)} style={btnStyle("green")}>💾</button>
+            <button onClick={() => deleteProduct(p.id!)} style={btnStyle("red")}>🗑️</button>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
 
 
         </>
@@ -570,6 +701,105 @@ export default function Admin() {
             <li>🔔 En "Notificaciones", podés recibir alertas de pedidos al correo o WhatsApp.</li>
             <li>🛒 Los filtros de productos te permiten buscar fácilmente lo que necesitás editar.</li>
           </ul>
+        </>
+      )}
+
+      {seccionActiva === "reservas" && (
+        <>
+          <>
+  <h3>📅 Reservas de servicios</h3>
+  <p>Acá podés ver, aceptar o rechazar las reservas realizadas por los clientes.</p>
+
+  {/* 📱 Configuración de WhatsApp y autoaceptación */}
+  <div style={{ marginBottom: "1.5rem" }}>
+    <label>
+      Número de WhatsApp para recibir reservas:
+      <input
+        type="text"
+        value={whatsappReservas}
+        onChange={(e) => setWhatsappReservas(e.target.value)}
+        placeholder="Ej: 5491123456789"
+        style={{ width: "100%", marginBottom: "0.5rem", marginTop: "0.5rem" }}
+      />
+    </label>
+
+    <div style={{ marginTop: "0.5rem" }}>
+      <label>
+        <input
+          type="checkbox"
+          checked={aceptarReservasAuto}
+          onChange={(e) => setAceptarReservasAuto(e.target.checked)}
+        />
+        Aceptar automáticamente las reservas
+      </label>
+    </div>
+
+    <button
+      onClick={guardarConfiguracion}
+      style={{
+        marginTop: "1rem",
+        backgroundColor: "#3483fa",
+        color: "white",
+        border: "none",
+        padding: "0.5rem 1rem",
+        borderRadius: "5px",
+        cursor: "pointer",
+      }}
+    >
+      💾 Guardar número
+    </button>
+  </div>
+
+  {/* ✅ Lista de reservas */}
+  <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "0 1rem" }}>
+    <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "1rem" }}>
+      <thead>
+        <tr style={{ background: "#f0f0f0" }}>
+          <th style={cellStyle}>Cliente</th>
+          <th style={cellStyle}>Servicio</th>
+          <th style={cellStyle}>Fecha</th>
+          <th style={cellStyle}>Hora</th>
+          <th style={cellStyle}>Estado</th>
+          <th style={cellStyle}>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {reservas.map((reserva, index) => (
+          <tr key={index}>
+            <td style={cellStyle}>{reserva.clienteNombre}</td>
+            <td style={cellStyle}>{reserva.productoNombre}</td>
+            <td style={cellStyle}>{reserva.fecha}</td>
+            <td style={cellStyle}>{reserva.hora}</td>
+            <td style={cellStyle}>{reserva.estado}</td>
+            <td style={cellStyle}>
+              <button
+                style={btnStyle("green")}
+                onClick={() => {
+                  cambiarEstadoReserva(reserva.id, "aceptado");
+                  const aceptarAuto = aceptarReservasAuto;
+                  if (!aceptarAuto && reserva.telefono) {
+                    const mensaje = `Hola ${reserva.clienteNombre}, tu turno para ${reserva.productoNombre} fue confirmado para el ${reserva.fecha} a las ${reserva.hora}. ¡Gracias por reservar!`;
+                    const numero = reserva.telefono.replace(/\D/g, "");
+                    window.open(`https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`, "_blank");
+                  }
+                }}
+              >
+                Aceptar
+              </button>
+              <button
+                style={btnStyle("red")}
+                onClick={() => cambiarEstadoReserva(reserva.id, "rechazado")}
+              >
+                Rechazar
+              </button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</>
+
         </>
       )}
     </div>

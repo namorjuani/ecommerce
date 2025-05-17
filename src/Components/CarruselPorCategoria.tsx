@@ -7,6 +7,11 @@ interface Producto {
     precio: number;
     imagen: string;
     stock?: number;
+    categoria?: string;
+    tipo: "producto" | "servicio";
+    precioReserva?: number;
+    precioTotal?: number;
+    envioGratis?: boolean;
 }
 
 interface Props {
@@ -62,9 +67,21 @@ export default function CarruselPorCategoria({ categoria, productos, carruselId 
                             style={{ width: "100%", height: "150px", objectFit: "cover", borderRadius: "5px" }}
                         />
                         <h4>{producto.nombre}</h4>
-                        <p style={{ fontWeight: "bold" }}>${producto.precio}</p>
 
-                        {(producto as any).envioGratis && (
+                        {producto.tipo === "producto" ? (
+                            <p style={{ fontWeight: "bold" }}>${producto.precio}</p>
+                        ) : (
+                            <div style={{ fontSize: "0.95rem", lineHeight: "1.4" }}>
+                                {producto.precioReserva !== undefined && (
+                                    <p style={{ margin: 0 }}>Reserva: <strong>${producto.precioReserva}</strong></p>
+                                )}
+                                {producto.precioTotal !== undefined && (
+                                    <p style={{ margin: 0 }}>Total: <strong>${producto.precioTotal}</strong></p>
+                                )}
+                            </div>
+                        )}
+
+                        {producto.envioGratis && (
                             <p style={{ color: "green", fontWeight: "bold", fontSize: "0.85rem" }}>
                                 Envío gratis
                             </p>
@@ -73,12 +90,10 @@ export default function CarruselPorCategoria({ categoria, productos, carruselId 
                         {producto.stock === 0 && (
                             <p style={{ color: "red", fontWeight: "bold" }}>Sin stock</p>
                         )}
-
                     </Link>
                 ))}
             </div>
 
-            {/* Flechas si hay más de 3 productos */}
             {mostrarFlecha && (
                 <>
                     <button

@@ -5,10 +5,7 @@ import { db } from "../firebase";
 import {
   doc,
   getDoc,
-  updateDoc,
   collection,
-  addDoc,
-  serverTimestamp,
   setDoc,
 } from "firebase/firestore";
 import Swal from "sweetalert2";
@@ -21,7 +18,6 @@ export default function Checkout() {
     eliminarDelCarrito,
     actualizarCantidad,
     calcularTotal,
-    vaciarCarrito,
   } = useCarrito();
 
   const { cliente } = useCliente();
@@ -34,7 +30,7 @@ export default function Checkout() {
       return;
     }
 
-    // Verificamos si el cliente ya tiene datos guardados
+    // Verificar si el cliente ya tiene datos guardados
     let datosGuardados: any = null;
     if (cliente) {
       const ref = doc(db, "tiendas", tiendaId, "clientes", cliente.uid);
@@ -81,57 +77,23 @@ export default function Checkout() {
       }
     }
 
-    Swal.fire({
-        title: "Procesando pedido...",
-        didOpen: () => {
-          Swal.showLoading();
-        },
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-      });
-      
-      setTimeout(() => {
-        Swal.close();
-        navigate("/forma-entrega");
-      }, 1200);
-
-    // Guardar en localStorage
+    // Guardar carrito y cliente en localStorage
     localStorage.setItem("cliente", JSON.stringify(clienteFinal));
     localStorage.setItem("carrito", JSON.stringify(carrito));
 
-    // Actualizar stock
-    for (const producto of carrito) {
-      const ref = doc(db, "tiendas", tiendaId, "productos", producto.id!);
-      const snap = await getDoc(ref);
-      if (snap.exists()) {
-        const data = snap.data();
-        const nuevoStock = Math.max(
-          0,
-          (data.stock || 0) - (producto.cantidad || 1)
-        );
-        await updateDoc(ref, { stock: nuevoStock });
-      }
-    }
+    Swal.fire({
+      title: "Procesando pedido...",
+      didOpen: () => {
+        Swal.showLoading();
+      },
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+    });
 
-    // Guardar el pedido (sin forma de entrega aún)
-    const pedido = {
-      estado: "pendiente",
-      fecha: serverTimestamp(),
-      total: calcularTotal(),
-      cliente: clienteFinal,
-      productos: carrito.map((prod) => ({
-        id: prod.id,
-        nombre: prod.nombre,
-        cantidad: prod.cantidad || 1,
-        subtotal: prod.precio * (prod.cantidad || 1),
-      })),
-    };
-
-    await addDoc(collection(db, "tiendas", tiendaId, "pedidos"), pedido);
-
-    vaciarCarrito();
-    Swal.close();
-    navigate("/forma-entrega");
+    setTimeout(() => {
+      Swal.close();
+      navigate("/forma-entrega");
+    }, 1200);
   };
 
   return (
