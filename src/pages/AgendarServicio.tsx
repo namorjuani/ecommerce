@@ -1,4 +1,3 @@
-// src/pages/AgendarServicio.tsx
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { db } from "../firebase";
@@ -12,21 +11,21 @@ import {
   addDoc,
   Timestamp,
 } from "firebase/firestore";
-import Calendar from "react-calendar"; // Asegurate de instalar con: npm i react-calendar
+import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import Swal from "sweetalert2";
 
 interface Producto {
   id?: string;
   nombre: string;
-  precio: number; // este es el precio de reserva
-  totalServicio?: number; // precio total (editable por admin)
+  precio: number;
+  totalServicio?: number;
   descripcion?: string;
 }
 
 interface Reserva {
-  fecha: string; // formato YYYY-MM-DD
-  hora: string; // "10:00", "11:00", etc.
+  fecha: string;
+  hora: string;
 }
 
 export default function AgendarServicio() {
@@ -38,6 +37,7 @@ export default function AgendarServicio() {
   const navigate = useNavigate();
 
   const horarios = ["09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00"];
+  const fechaISO = fechaSeleccionada?.toISOString().split("T")[0];
 
   useEffect(() => {
     const cargarDatos = async () => {
@@ -48,7 +48,6 @@ export default function AgendarServicio() {
       const snap = await getDoc(prodRef);
       if (snap.exists()) setProducto({ ...(snap.data() as Producto), id });
 
-      // Traer reservas existentes
       const reservasRef = collection(db, "tiendas", tiendaId, "reservas");
       const q = query(reservasRef, where("productoId", "==", id));
       const snapRes = await getDocs(q);
@@ -58,8 +57,6 @@ export default function AgendarServicio() {
 
     cargarDatos();
   }, [id]);
-
-  const fechaISO = fechaSeleccionada?.toISOString().split("T")[0];
 
   const horariosDisponibles = horarios.filter((h) => {
     return !reservas.some((r) => r.fecha === fechaISO && r.hora === h);
@@ -71,19 +68,56 @@ export default function AgendarServicio() {
       return;
     }
 
-    // Guardar datos en localStorage para usarlos en el checkout
-    localStorage.setItem(
-      "reserva",
-      JSON.stringify({
-        productoId: producto.id,
-        fecha: fechaISO,
-        hora: horaSeleccionada,
-        nombre: producto.nombre,
-        precioReserva: producto.precio,
-      })
-    );
+    const tiendaId = localStorage.getItem("userId");
+    if (!tiendaId) {
+      Swal.fire("Error", "Tienda no encontrada", "error");
+      return;
+    }
 
-    navigate("/checkout-reserva"); // pantalla que vamos a crear luego
+    const nuevaReserva = {
+      productoId: producto.id,
+      productoNombre: producto.nombre,
+      fecha: fechaISO,
+      hora: horaSeleccionada,
+      estado: "pendiente",
+      creada: Timestamp.now(),
+    };
+
+    if (producto.precio === 0) {
+      try {
+        await addDoc(collection(db, "tiendas", tiendaId, "reservas"), nuevaReserva);
+        Swal.fire("¡Listo!", "Tu reserva fue confirmada", "success");
+        navigate("/checkout-reserva");
+      } catch (error) {
+        console.error("Error al guardar en Firebase:", error);
+        Swal.fire("Error", "No se pudo guardar la reserva", "error");
+      }
+      return; // ✅ Detenemos aquí si el precio es 0
+    }
+
+    // Si el precio es mayor a 0, seguimos con MercadoPago
+    localStorage.setItem("reserva", JSON.stringify(nuevaReserva));
+
+    try {
+      const res = await fetch("https://us-central1-tu-app.cloudfunctions.net/crearPreferencia", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productos: [{ nombre: producto.nombre, precio: producto.precio }],
+          tiendaId,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.init_point) {
+        window.location.href = data.init_point;
+      } else {
+        Swal.fire("Error", "No se pudo generar el link de pago", "error");
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      Swal.fire("Error", "Falló la conexión con Mercado Pago", "error");
+    }
   };
 
   return (
@@ -124,7 +158,6 @@ export default function AgendarServicio() {
         </div>
       )}
 
-      {/* Mostrar precios */}
       {producto && (
         <div style={{ marginTop: "2rem" }}>
           <p><strong>Precio de reserva:</strong> ${producto.precio}</p>
@@ -148,7 +181,7 @@ export default function AgendarServicio() {
           cursor: "pointer",
         }}
       >
-        Confirmar y pagar reserva
+        {producto?.precio === 0 ? "Confirmar reserva" : "Confirmar y pagar reserva"}
       </button>
     </div>
   );

@@ -4,6 +4,8 @@ import ImportadorCSV from "./ImportadorCSV";
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import HistorialCajas from "../Components/HistorialCajas";
 import { db } from "../firebase";
 import {
   collection,
@@ -52,7 +54,9 @@ interface Producto {
 
 
 export default function Admin() {
-  const { usuario } = useAuth();
+  
+  const { usuario, rol } = useAuth();
+const navigate = useNavigate();
 
   const [productos, setProductos] = useState<Producto[]>([]);
   const [nuevo, setNuevo] = useState<Producto>({
@@ -123,6 +127,11 @@ export default function Admin() {
     );
   };
 
+useEffect(() => {
+  if (rol && rol !== "admin") {
+    navigate("/"); // redirige si no es admin
+  }
+}, [rol, navigate]);
 
   useEffect(() => {
     if (!usuario) return;
@@ -267,23 +276,26 @@ export default function Admin() {
 
 
 
- const productosFiltrados = productos
-  .filter((p) =>
-    p.nombre.toLowerCase().includes(filtroNombre.toLowerCase())
-  )
-  .filter((p) =>
-    filtroCategoria
-      ? (p.categoria || "").toLowerCase().includes(filtroCategoria.toLowerCase())
-      : true
-  )
-  .sort((a, b) => {
-    if (ordenPrecio === "asc") return a.precio - b.precio;
-    if (ordenPrecio === "desc") return b.precio - a.precio;
-    return 0;
-  });
+  const productosFiltrados = productos
+    .filter((p) =>
+      p.nombre.toLowerCase().includes(filtroNombre.toLowerCase())
+    )
+    .filter((p) =>
+      filtroCategoria
+        ? (p.categoria || "").toLowerCase().includes(filtroCategoria.toLowerCase())
+        : true
+    )
+    .sort((a, b) => {
+      if (ordenPrecio === "asc") return a.precio - b.precio;
+      if (ordenPrecio === "desc") return b.precio - a.precio;
+      return 0;
+    });
 
   const categorias = Array.from(new Set(productos.map(p => p.categoria).filter(Boolean)));
-
+  
+if (!usuario || rol !== "admin") {
+  return <p style={{ textAlign: "center", marginTop: "2rem" }}>Cargando...</p>;
+}
   return (
     <div className="admin-container">
       <div className="admin-header">
@@ -294,7 +306,7 @@ export default function Admin() {
 
       {/* 🧭 Menú de navegación */}
       <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem", borderBottom: "1px solid #ccc", paddingBottom: "1rem" }}>
-        {["productos", "reservas", "estetica", "notificaciones", "pagos", "ayuda"].map((seccion) => (
+        {["productos", "reservas", "empleados","cajas", "estetica", "notificaciones", "pagos", "ayuda"].map((seccion) => (
           <button
             key={seccion}
             onClick={() => setSeccionActiva(seccion)}
@@ -349,6 +361,48 @@ export default function Admin() {
         </>
       )}
 
+      {seccionActiva === "empleados" && (
+  <>
+    <h3>👨‍💼 Gestión de empleados</h3>
+    <p>Creá empleados que puedan usar el punto de venta presencial</p>
+
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", maxWidth: "600px", marginBottom: "1rem" }}>
+      <input id="empleado-nombre" placeholder="Nombre del empleado" />
+      <input id="empleado-correo" placeholder="Correo del empleado" />
+    </div>
+
+    <button
+      onClick={async () => {
+        const nombre = (document.getElementById("empleado-nombre") as HTMLInputElement).value;
+        const correo = (document.getElementById("empleado-correo") as HTMLInputElement).value;
+
+        if (!nombre || !correo) {
+          alert("Completá ambos campos");
+          return;
+        }
+
+        const ref = doc(db, "usuarios", correo); // usamos el correo como ID
+        await setDoc(ref, {
+          rol: "empleado",
+          nombre,
+          email: correo,
+          tiendaId: usuario?.uid || "",
+        });
+
+        alert("Empleado creado correctamente (debe iniciar sesión con Google)");
+      }}
+      style={{ backgroundColor: "#3483fa", color: "white", border: "none", padding: "0.6rem 1.2rem", borderRadius: "6px", cursor: "pointer" }}
+    >
+      ➕ Crear empleado
+    </button>
+
+    <p style={{ marginTop: "1rem", color: "#666" }}>
+      El empleado debe iniciar sesión con Google desde <strong>/login</strong>. Será redirigido automáticamente a su panel.
+    </p>
+  </>
+)}
+
+
 
       {/* 🛒 Sección: Productos */}
       {seccionActiva === "productos" && (
@@ -362,39 +416,39 @@ export default function Admin() {
               <input value={nuevo.nombre} onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })} />
             </label>
             {nuevo.tipo === "producto" && (
-  <label>Precio
-    <input
-      type="number"
-      value={nuevo.precio}
-      onChange={(e) =>
-        setNuevo({ ...nuevo, precio: Number(e.target.value) })
-      }
-    />
-  </label>
-)}
+              <label>Precio
+                <input
+                  type="number"
+                  value={nuevo.precio}
+                  onChange={(e) =>
+                    setNuevo({ ...nuevo, precio: Number(e.target.value) })
+                  }
+                />
+              </label>
+            )}
 
-{nuevo.tipo === "servicio" && (
-  <>
-    <label>Precio de reserva
-      <input
-        type="number"
-        value={nuevo.precioReserva || 0}
-        onChange={(e) =>
-          setNuevo({ ...nuevo, precioReserva: Number(e.target.value) })
-        }
-      />
-    </label>
-    <label>Precio total del servicio
-      <input
-        type="number"
-        value={nuevo.precioTotal || 0}
-        onChange={(e) =>
-          setNuevo({ ...nuevo, precioTotal: Number(e.target.value) })
-        }
-      />
-    </label>
-  </>
-)}
+            {nuevo.tipo === "servicio" && (
+              <>
+                <label>Precio de reserva
+                  <input
+                    type="number"
+                    value={nuevo.precioReserva || 0}
+                    onChange={(e) =>
+                      setNuevo({ ...nuevo, precioReserva: Number(e.target.value) })
+                    }
+                  />
+                </label>
+                <label>Precio total del servicio
+                  <input
+                    type="number"
+                    value={nuevo.precioTotal || 0}
+                    onChange={(e) =>
+                      setNuevo({ ...nuevo, precioTotal: Number(e.target.value) })
+                    }
+                  />
+                </label>
+              </>
+            )}
 
 
 
@@ -485,124 +539,124 @@ export default function Admin() {
           </button>
 
 
-<h3>Modificar productos existentes</h3>
+          <h3>Modificar productos existentes</h3>
 
-<div style={{ maxWidth: "1000px", margin: "0 auto", padding: "0 1rem" }}>
+          <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "0 1rem" }}>
 
-  {/* 🔎 Filtros de búsqueda */}
-  <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", marginBottom: "1rem" }}>
-    <input
-      type="text"
-      placeholder="Buscar por nombre"
-      value={filtroNombre}
-      onChange={(e) => setFiltroNombre(e.target.value)}
-      style={{ flex: "1", padding: "0.4rem" }}
-    />
+            {/* 🔎 Filtros de búsqueda */}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", marginBottom: "1rem" }}>
+              <input
+                type="text"
+                placeholder="Buscar por nombre"
+                value={filtroNombre}
+                onChange={(e) => setFiltroNombre(e.target.value)}
+                style={{ flex: "1", padding: "0.4rem" }}
+              />
 
-    <select
-      value={ordenPrecio}
-      onChange={(e) => setOrdenPrecio(e.target.value as any)}
-      style={{ padding: "0.4rem" }}
-    >
-      <option value="">Ordenar por precio</option>
-      <option value="asc">Menor a mayor</option>
-      <option value="desc">Mayor a menor</option>
-    </select>
+              <select
+                value={ordenPrecio}
+                onChange={(e) => setOrdenPrecio(e.target.value as any)}
+                style={{ padding: "0.4rem" }}
+              >
+                <option value="">Ordenar por precio</option>
+                <option value="asc">Menor a mayor</option>
+                <option value="desc">Mayor a menor</option>
+              </select>
 
-    <input
-      type="text"
-      placeholder="Filtrar por categoría"
-      list="categorias-sugeridas"
-      value={filtroCategoria}
-      onChange={(e) => setFiltroCategoria(e.target.value)}
-      style={{ flex: "1", padding: "0.4rem" }}
-    />
-    <datalist id="categorias-sugeridas">
-      {categorias.map((cat, idx) => (
-        <option key={idx} value={cat} />
-      ))}
-    </datalist>
-  </div>
+              <input
+                type="text"
+                placeholder="Filtrar por categoría"
+                list="categorias-sugeridas"
+                value={filtroCategoria}
+                onChange={(e) => setFiltroCategoria(e.target.value)}
+                style={{ flex: "1", padding: "0.4rem" }}
+              />
+              <datalist id="categorias-sugeridas">
+                {categorias.map((cat, idx) => (
+                  <option key={idx} value={cat} />
+                ))}
+              </datalist>
+            </div>
 
-  {/* 🧾 Tabla de productos */}
-  <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "1rem" }}>
-    <thead>
-      <tr style={{ background: "#f0f0f0", textAlign: "left" }}>
-        <th style={cellStyle}>Nombre</th>
-        <th style={cellStyle}>Precio</th>
-        <th style={cellStyle}>Reserva</th>
-        <th style={cellStyle}>Precio Total</th>
-        <th style={cellStyle}>Stock</th>
-        <th style={cellStyle}>Categoría</th>
-        <th style={cellStyle}>Tipo</th>
-        <th style={cellStyle}>Envío Gratis</th>
-        <th style={cellStyle}>Cuotas</th>
-        <th style={cellStyle}>Acción</th>
-      </tr>
-    </thead>
-    <tbody>
-      {productosFiltrados.map((p) => (
-        <tr key={p.id}>
-          <td style={cellStyle}>
-            <input value={p.nombre} onChange={(e) => editarCampo(p.id!, "nombre", e.target.value)} />
-          </td>
+            {/* 🧾 Tabla de productos */}
+            <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "1rem" }}>
+              <thead>
+                <tr style={{ background: "#f0f0f0", textAlign: "left" }}>
+                  <th style={cellStyle}>Nombre</th>
+                  <th style={cellStyle}>Precio</th>
+                  <th style={cellStyle}>Reserva</th>
+                  <th style={cellStyle}>Precio Total</th>
+                  <th style={cellStyle}>Stock</th>
+                  <th style={cellStyle}>Categoría</th>
+                  <th style={cellStyle}>Tipo</th>
+                  <th style={cellStyle}>Envío Gratis</th>
+                  <th style={cellStyle}>Cuotas</th>
+                  <th style={cellStyle}>Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {productosFiltrados.map((p) => (
+                  <tr key={p.id}>
+                    <td style={cellStyle}>
+                      <input value={p.nombre} onChange={(e) => editarCampo(p.id!, "nombre", e.target.value)} />
+                    </td>
 
-          <td style={cellStyle}>
-            {p.tipo === "producto" ? (
-              <input type="number" value={p.precio} onChange={(e) => editarCampo(p.id!, "precio", Number(e.target.value))} />
-            ) : (
-              "-"
-            )}
-          </td>
+                    <td style={cellStyle}>
+                      {p.tipo === "producto" ? (
+                        <input type="number" value={p.precio} onChange={(e) => editarCampo(p.id!, "precio", Number(e.target.value))} />
+                      ) : (
+                        "-"
+                      )}
+                    </td>
 
-          <td style={cellStyle}>
-            {p.tipo === "servicio" ? (
-              <input type="number" value={p.precioReserva || 0} onChange={(e) => editarCampo(p.id!, "precioReserva", Number(e.target.value))} />
-            ) : (
-              "-"
-            )}
-          </td>
+                    <td style={cellStyle}>
+                      {p.tipo === "servicio" ? (
+                        <input type="number" value={p.precioReserva || 0} onChange={(e) => editarCampo(p.id!, "precioReserva", Number(e.target.value))} />
+                      ) : (
+                        "-"
+                      )}
+                    </td>
 
-          <td style={cellStyle}>
-            {p.tipo === "servicio" ? (
-              <input type="number" value={p.precioTotal || 0} onChange={(e) => editarCampo(p.id!, "precioTotal", Number(e.target.value))} />
-            ) : (
-              "-"
-            )}
-          </td>
+                    <td style={cellStyle}>
+                      {p.tipo === "servicio" ? (
+                        <input type="number" value={p.precioTotal || 0} onChange={(e) => editarCampo(p.id!, "precioTotal", Number(e.target.value))} />
+                      ) : (
+                        "-"
+                      )}
+                    </td>
 
-          <td style={cellStyle}>
-            <input type="number" value={p.stock} onChange={(e) => editarCampo(p.id!, "stock", Number(e.target.value))} />
-          </td>
+                    <td style={cellStyle}>
+                      <input type="number" value={p.stock} onChange={(e) => editarCampo(p.id!, "stock", Number(e.target.value))} />
+                    </td>
 
-          <td style={cellStyle}>
-            <input value={p.categoria || ""} onChange={(e) => editarCampo(p.id!, "categoria", e.target.value)} />
-          </td>
+                    <td style={cellStyle}>
+                      <input value={p.categoria || ""} onChange={(e) => editarCampo(p.id!, "categoria", e.target.value)} />
+                    </td>
 
-          <td style={cellStyle}>
-            <select value={p.tipo} onChange={(e) => editarCampo(p.id!, "tipo", e.target.value)}>
-              <option value="producto">Producto</option>
-              <option value="servicio">Servicio</option>
-            </select>
-          </td>
+                    <td style={cellStyle}>
+                      <select value={p.tipo} onChange={(e) => editarCampo(p.id!, "tipo", e.target.value)}>
+                        <option value="producto">Producto</option>
+                        <option value="servicio">Servicio</option>
+                      </select>
+                    </td>
 
-          <td style={cellStyle}>
-            <input type="checkbox" checked={p.envioGratis || false} onChange={(e) => editarCampo(p.id!, "envioGratis", e.target.checked)} />
-          </td>
+                    <td style={cellStyle}>
+                      <input type="checkbox" checked={p.envioGratis || false} onChange={(e) => editarCampo(p.id!, "envioGratis", e.target.checked)} />
+                    </td>
 
-          <td style={cellStyle}>
-            <input value={p.cuotas || ""} onChange={(e) => editarCampo(p.id!, "cuotas", e.target.value)} />
-          </td>
+                    <td style={cellStyle}>
+                      <input value={p.cuotas || ""} onChange={(e) => editarCampo(p.id!, "cuotas", e.target.value)} />
+                    </td>
 
-          <td style={cellStyle}>
-            <button onClick={() => actualizarProducto(p)} style={btnStyle("green")}>💾</button>
-            <button onClick={() => deleteProduct(p.id!)} style={btnStyle("red")}>🗑️</button>
-          </td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
-</div>
+                    <td style={cellStyle}>
+                      <button onClick={() => actualizarProducto(p)} style={btnStyle("green")}>💾</button>
+                      <button onClick={() => deleteProduct(p.id!)} style={btnStyle("red")}>🗑️</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
 
         </>
@@ -707,101 +761,142 @@ export default function Admin() {
       {seccionActiva === "reservas" && (
         <>
           <>
-  <h3>📅 Reservas de servicios</h3>
-  <p>Acá podés ver, aceptar o rechazar las reservas realizadas por los clientes.</p>
+            <h3>📅 Reservas de servicios</h3>
+            <p>Acá podés ver, aceptar o rechazar las reservas realizadas por los clientes.</p>
 
-  {/* 📱 Configuración de WhatsApp y autoaceptación */}
-  <div style={{ marginBottom: "1.5rem" }}>
-    <label>
-      Número de WhatsApp para recibir reservas:
-      <input
-        type="text"
-        value={whatsappReservas}
-        onChange={(e) => setWhatsappReservas(e.target.value)}
-        placeholder="Ej: 5491123456789"
-        style={{ width: "100%", marginBottom: "0.5rem", marginTop: "0.5rem" }}
-      />
-    </label>
+            {/* 📱 Configuración de WhatsApp y autoaceptación */}
+            <div style={{ marginBottom: "1.5rem" }}>
+              <label>
+                Número de WhatsApp para recibir reservas:
+                <input
+                  type="text"
+                  value={whatsappReservas}
+                  onChange={(e) => setWhatsappReservas(e.target.value)}
+                  placeholder="Ej: 5491123456789"
+                  style={{ width: "100%", marginBottom: "0.5rem", marginTop: "0.5rem" }}
+                />
+              </label>
 
-    <div style={{ marginTop: "0.5rem" }}>
-      <label>
-        <input
-          type="checkbox"
-          checked={aceptarReservasAuto}
-          onChange={(e) => setAceptarReservasAuto(e.target.checked)}
-        />
-        Aceptar automáticamente las reservas
-      </label>
-    </div>
-
-    <button
-      onClick={guardarConfiguracion}
-      style={{
-        marginTop: "1rem",
-        backgroundColor: "#3483fa",
-        color: "white",
-        border: "none",
-        padding: "0.5rem 1rem",
-        borderRadius: "5px",
-        cursor: "pointer",
-      }}
-    >
-      💾 Guardar número
-    </button>
-  </div>
-
-  {/* ✅ Lista de reservas */}
-  <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "0 1rem" }}>
-    <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "1rem" }}>
-      <thead>
-        <tr style={{ background: "#f0f0f0" }}>
-          <th style={cellStyle}>Cliente</th>
-          <th style={cellStyle}>Servicio</th>
-          <th style={cellStyle}>Fecha</th>
-          <th style={cellStyle}>Hora</th>
-          <th style={cellStyle}>Estado</th>
-          <th style={cellStyle}>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        {reservas.map((reserva, index) => (
-          <tr key={index}>
-            <td style={cellStyle}>{reserva.clienteNombre}</td>
-            <td style={cellStyle}>{reserva.productoNombre}</td>
-            <td style={cellStyle}>{reserva.fecha}</td>
-            <td style={cellStyle}>{reserva.hora}</td>
-            <td style={cellStyle}>{reserva.estado}</td>
-            <td style={cellStyle}>
               <button
-                style={btnStyle("green")}
-                onClick={() => {
-                  cambiarEstadoReserva(reserva.id, "aceptado");
-                  const aceptarAuto = aceptarReservasAuto;
-                  if (!aceptarAuto && reserva.telefono) {
-                    const mensaje = `Hola ${reserva.clienteNombre}, tu turno para ${reserva.productoNombre} fue confirmado para el ${reserva.fecha} a las ${reserva.hora}. ¡Gracias por reservar!`;
-                    const numero = reserva.telefono.replace(/\D/g, "");
-                    window.open(`https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`, "_blank");
-                  }
+                onClick={async () => {
+                  if (!usuario) return;
+                  const ref = doc(db, "tiendas", usuario.uid);
+                  await updateDoc(ref, { whatsappReservas });
+                  console.log("✅ Número de WhatsApp guardado:", whatsappReservas);
+                  alert("Número de WhatsApp guardado");
+                }}
+                style={{
+                  marginBottom: "1rem",
+                  backgroundColor: "#3483fa",
+                  color: "white",
+                  border: "none",
+                  padding: "0.5rem 1rem",
+                  borderRadius: "5px",
+                  cursor: "pointer",
                 }}
               >
-                Aceptar
+                💾 Guardar número
               </button>
+
+
+              <div style={{ marginTop: "0.5rem" }}>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={aceptarReservasAuto}
+                    onChange={(e) => setAceptarReservasAuto(e.target.checked)}
+                  />
+                  Aceptar automáticamente las reservas
+                </label>
+              </div>
+
               <button
-                style={btnStyle("red")}
-                onClick={() => cambiarEstadoReserva(reserva.id, "rechazado")}
+                onClick={guardarConfiguracion}
+                style={{
+                  marginTop: "1rem",
+                  backgroundColor: "#3483fa",
+                  color: "white",
+                  border: "none",
+                  padding: "0.5rem 1rem",
+                  borderRadius: "5px",
+                  cursor: "pointer",
+                }}
               >
-                Rechazar
+                💾 Guardar número
               </button>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-</>
+            </div>
+
+            {/* ✅ Lista de reservas */}
+            <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "0 1rem" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "1rem" }}>
+                <thead>
+                  <tr style={{ background: "#f0f0f0" }}>
+                    <th style={cellStyle}>Cliente</th>
+                    <th style={cellStyle}>Servicio</th>
+                    <th style={cellStyle}>Fecha</th>
+                    <th style={cellStyle}>Hora</th>
+                    <th style={cellStyle}>Estado</th>
+                    <th style={cellStyle}>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reservas.map((reserva, index) => (
+                    <tr key={index}>
+                      <td style={cellStyle}>{reserva.clienteNombre}</td>
+                      <td style={cellStyle}>{reserva.productoNombre}</td>
+                      <td style={cellStyle}>{reserva.fecha}</td>
+                      <td style={cellStyle}>{reserva.hora}</td>
+                      <td style={cellStyle}>{reserva.estado}</td>
+                      <td style={cellStyle}>
+                        <button
+                          style={btnStyle("green")}
+                          onClick={() => {
+                            cambiarEstadoReserva(reserva.id, "aceptado");
+
+                            const aceptarAuto = aceptarReservasAuto;
+                            if (!aceptarAuto && reserva.telefono) {
+                              const mensaje = `Hola ${reserva.clienteNombre}, tu turno para ${reserva.productoNombre} fue confirmado para el ${reserva.fecha} a las ${reserva.hora}. ¡Gracias por reservar!`;
+
+                              // ✅ Limpiar y formatear número
+                              let numero = whatsappReservas.replace(/\D/g, ""); // solo números
+
+                              if (!numero.startsWith("549")) {
+                                if (numero.startsWith("54")) {
+                                  numero = "549" + numero.slice(2); // ya tiene 54 pero falta 9
+                                } else if (numero.startsWith("9")) {
+                                  numero = "54" + numero; // ya tiene 9 pero falta 54
+                                } else {
+                                  numero = "549" + numero; // no tiene ni 54 ni 9
+                                }
+                              }
+
+                              const url = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
+                              console.log("📲 Link generado:", url);
+                              window.open(url, "_blank");
+                            }
+                          }}
+                        >
+                          Aceptar
+                        </button>
+                        <button
+                          style={btnStyle("red")}
+                          onClick={() => cambiarEstadoReserva(reserva.id, "rechazado")}
+                        >
+                          Rechazar
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              
+            </div>
+          </>
 
         </>
       )}
+{seccionActiva === "cajas" && <HistorialCajas />}
+
     </div>
   );
 }

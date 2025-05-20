@@ -1,3 +1,4 @@
+// functions/src/mercadoPago.ts
 import cors from "cors";
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
@@ -60,7 +61,10 @@ export const crearPreferencia = functions.https.onRequest((req, res) => {
         }
       );
 
-      res.json({ preferenceId: response.data.id });
+      res.json({
+        preferenceId: response.data.id,
+        init_point: response.data.init_point, // ✅ para redirigir directo
+      });
     } catch (error) {
       console.error("Error al crear preferencia:", error);
       res.status(500).send("Error al crear preferencia");
