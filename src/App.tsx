@@ -16,6 +16,7 @@ import { ClienteProvider } from "./context/ClienteContext";
 import DatosEnvio from "./pages/DatosEnvio";
 import AgendarServicio from "./pages/AgendarServicio";
 import CheckoutReserva from "./pages/CheckoutReserva"; // ajustá la ruta si está en otra carpeta
+import ResultadoBusqueda from "./pages/ResultadoBusqueda";
 
 
 export default function App() {
@@ -36,6 +37,7 @@ export default function App() {
                 <Route path="/datos-envio" element={<DatosEnvio />} />
                 <Route path="/agendar-servicio/:id" element={<AgendarServicio />} />
                 <Route path="/checkout-reserva" element={<CheckoutReserva />} />
+                <Route path="/buscar/:termino" element={<ResultadoBusqueda />} />
                 {/* ✅ nueva ruta */}
                 <Route
                   path="/admin"

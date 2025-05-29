@@ -49,14 +49,15 @@ interface Producto {
   }[];
   precioReserva?: number;
   precioTotal?: number;
+  codigoBarras?: string;
 }
 [];
 
 
 export default function Admin() {
-  
+
   const { usuario, rol } = useAuth();
-const navigate = useNavigate();
+  const navigate = useNavigate();
 
   const [productos, setProductos] = useState<Producto[]>([]);
   const [nuevo, setNuevo] = useState<Producto>({
@@ -127,11 +128,11 @@ const navigate = useNavigate();
     );
   };
 
-useEffect(() => {
-  if (rol && rol !== "admin") {
-    navigate("/"); // redirige si no es admin
-  }
-}, [rol, navigate]);
+  useEffect(() => {
+    if (rol && rol !== "admin") {
+      navigate("/"); // redirige si no es admin
+    }
+  }, [rol, navigate]);
 
   useEffect(() => {
     if (!usuario) return;
@@ -235,6 +236,7 @@ useEffect(() => {
       stock: 0,
       tipo: "producto",
       categoria: "",
+      codigoBarras: nuevo.codigoBarras || "",
       variantes: [],
     });
   };
@@ -292,10 +294,10 @@ useEffect(() => {
     });
 
   const categorias = Array.from(new Set(productos.map(p => p.categoria).filter(Boolean)));
-  
-if (!usuario || rol !== "admin") {
-  return <p style={{ textAlign: "center", marginTop: "2rem" }}>Cargando...</p>;
-}
+
+  if (!usuario || rol !== "admin") {
+    return <p style={{ textAlign: "center", marginTop: "2rem" }}>Cargando...</p>;
+  }
   return (
     <div className="admin-container">
       <div className="admin-header">
@@ -306,7 +308,7 @@ if (!usuario || rol !== "admin") {
 
       {/* 🧭 Menú de navegación */}
       <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem", borderBottom: "1px solid #ccc", paddingBottom: "1rem" }}>
-        {["productos", "reservas", "empleados","cajas", "estetica", "notificaciones", "pagos", "ayuda"].map((seccion) => (
+        {["productos", "reservas", "empleados", "cajas", "estetica", "notificaciones", "pagos", "ayuda"].map((seccion) => (
           <button
             key={seccion}
             onClick={() => setSeccionActiva(seccion)}
@@ -362,45 +364,46 @@ if (!usuario || rol !== "admin") {
       )}
 
       {seccionActiva === "empleados" && (
-  <>
-    <h3>👨‍💼 Gestión de empleados</h3>
-    <p>Creá empleados que puedan usar el punto de venta presencial</p>
+        <>
+          <h3>👨‍💼 Gestión de empleados</h3>
+          <p>Creá empleados que puedan usar el punto de venta presencial</p>
 
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", maxWidth: "600px", marginBottom: "1rem" }}>
-      <input id="empleado-nombre" placeholder="Nombre del empleado" />
-      <input id="empleado-correo" placeholder="Correo del empleado" />
-    </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", maxWidth: "600px", marginBottom: "1rem" }}>
+            <input id="empleado-nombre" placeholder="Nombre del empleado" />
+            <input id="empleado-correo" placeholder="Correo del empleado" />
+          </div>
 
-    <button
-      onClick={async () => {
-        const nombre = (document.getElementById("empleado-nombre") as HTMLInputElement).value;
-        const correo = (document.getElementById("empleado-correo") as HTMLInputElement).value;
+          <button
+            onClick={async () => {
+              const nombre = (document.getElementById("empleado-nombre") as HTMLInputElement).value;
+              const correo = (document.getElementById("empleado-correo") as HTMLInputElement).value;
 
-        if (!nombre || !correo) {
-          alert("Completá ambos campos");
-          return;
-        }
+              if (!nombre || !correo) {
+                alert("Completá ambos campos");
+                return;
+              }
 
-        const ref = doc(db, "usuarios", correo); // usamos el correo como ID
-        await setDoc(ref, {
-          rol: "empleado",
-          nombre,
-          email: correo,
-          tiendaId: usuario?.uid || "",
-        });
+              const ref = doc(db, "usuarios", correo); // usamos el correo como ID
+              await setDoc(ref, {
+                rol: "empleado",
+                nombre,
+                email: correo,
+                tiendaId: usuario?.uid || "",
+                
+              });
 
-        alert("Empleado creado correctamente (debe iniciar sesión con Google)");
-      }}
-      style={{ backgroundColor: "#3483fa", color: "white", border: "none", padding: "0.6rem 1.2rem", borderRadius: "6px", cursor: "pointer" }}
-    >
-      ➕ Crear empleado
-    </button>
+              alert("Empleado creado correctamente (debe iniciar sesión con Google)");
+            }}
+            style={{ backgroundColor: "#3483fa", color: "white", border: "none", padding: "0.6rem 1.2rem", borderRadius: "6px", cursor: "pointer" }}
+          >
+            ➕ Crear empleado
+          </button>
 
-    <p style={{ marginTop: "1rem", color: "#666" }}>
-      El empleado debe iniciar sesión con Google desde <strong>/login</strong>. Será redirigido automáticamente a su panel.
-    </p>
-  </>
-)}
+          <p style={{ marginTop: "1rem", color: "#666" }}>
+            El empleado debe iniciar sesión con Google desde <strong>/login</strong>. Será redirigido automáticamente a su panel.
+          </p>
+        </>
+      )}
 
 
 
@@ -412,6 +415,19 @@ if (!usuario || rol !== "admin") {
 
           <h3>Agregar producto nuevo</h3>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "2rem" }}>
+            <label>Código de barras (opcional):</label>
+            <input
+              type="text"
+              value={nuevo.codigoBarras || ""}
+              onChange={(e) =>
+                setNuevo((prev) => ({
+                  ...prev,
+                  codigoBarras: e.target.value,
+                }))
+              }
+              placeholder="Ej. 7791234567890"
+              style={{ width: "100%", marginBottom: "1rem", padding: "0.4rem" }}
+            />
             <label>Nombre
               <input value={nuevo.nombre} onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })} />
             </label>
@@ -423,8 +439,10 @@ if (!usuario || rol !== "admin") {
                   onChange={(e) =>
                     setNuevo({ ...nuevo, precio: Number(e.target.value) })
                   }
+
                 />
               </label>
+
             )}
 
             {nuevo.tipo === "servicio" && (
@@ -889,13 +907,13 @@ if (!usuario || rol !== "admin") {
                   ))}
                 </tbody>
               </table>
-              
+
             </div>
           </>
 
         </>
       )}
-{seccionActiva === "cajas" && <HistorialCajas />}
+      {seccionActiva === "cajas" && <HistorialCajas />}
 
     </div>
   );

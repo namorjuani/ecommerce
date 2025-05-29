@@ -6,6 +6,7 @@ import { useCliente } from "../context/ClienteContext";
 import "./css/Home.css";
 import CarruselPorCategoria from "../Components/CarruselPorCategoria";
 import CategoriasDestacadas from "../Components/CategoriasDestacadas";
+import BarraBusqueda from "../Components/BarraBusqueda";
 
 interface Producto {
   id: string;
@@ -145,6 +146,8 @@ export default function Home() {
           position: "relative",
         }}
       />
+
+        <BarraBusqueda />
       {/* 🔹 Acá van las categorías destacadas */}
       <CategoriasDestacadas />
       {/* Productos */}
