@@ -18,6 +18,8 @@ import {
 } from "firebase/firestore";
 import { deleteDoc } from "firebase/firestore";
 import Swal from "sweetalert2";
+import VistaPreviaTienda from "../Components/VistaPreviaTienda";
+import UbicacionTienda from "../Components/UbicacionTienda";
 
 
 interface Reserva {
@@ -103,6 +105,14 @@ export default function Admin() {
   const [reservas, setReservas] = useState<any[]>([]);
   const [aceptarReservasAuto, setAceptarReservasAuto] = useState(false);
   const [whatsappReservas, setWhatsappReservas] = useState("");
+  const [googleMaps, setGoogleMaps] = useState("");
+  const [instagram, setInstagram] = useState("");
+  const [textoUbicacion, setTextoUbicacion] = useState("");
+
+  const [facebook, setFacebook] = useState("");
+  const [tiktok, setTiktok] = useState("");
+  const [posicionBanner, setPosicionBanner] = useState("center");
+  const [tamañoBanner, setTamañoBanner] = useState("cover");
 
 
   const cellStyle = {
@@ -142,6 +152,8 @@ export default function Admin() {
       const configSnap = await getDoc(configRef);
       if (configSnap.exists()) {
         const data = configSnap.data();
+
+        // Ya existentes
         setWhatsappReservas(data.whatsappReservas || "");
         setAceptarReservasAuto(data.aceptarReservasAuto || false);
         setNombre(data.nombre || "");
@@ -158,7 +170,18 @@ export default function Admin() {
         setRecibirPorWhatsapp(data.recibirPorWhatsapp || false);
         setMercadoPagoToken(data.mercadoPagoToken || "");
         setPublicKeyMP(data.publicKeyMP || "");
+
+        // NUEVOS CAMPOS DE PERSONALIZACIÓN
+        setGoogleMaps(data.googleMaps || "");
+        setInstagram(data.instagram || "");
+        setFacebook(data.facebook || "");
+        setTiktok(data.tiktok || "");
+        setPosicionBanner(data.posicionBanner || "center");
+        setTamañoBanner(data.tamañoBanner || "cover");
+        setTextoUbicacion(data.textoUbicacion || "");
+
       }
+
       const productosRef = collection(db, "tiendas", usuario.uid, "productos");
       const snapshot = await getDocs(productosRef);
       const lista = snapshot.docs.map((doc) => ({
@@ -170,6 +193,7 @@ export default function Admin() {
 
     cargarDatos();
   }, [usuario]);
+
 
   const cargarReservas = async () => {
     if (!usuario) return;
@@ -196,27 +220,30 @@ export default function Admin() {
   const guardarConfiguracion = async () => {
     if (!usuario) return;
     const ref = doc(db, "tiendas", usuario.uid);
-    await setDoc(ref, {
-      nombre,
-      descripcion,
-      imagen,
-      logo,
-      textoHero,
-      colorFondo,
-      colorBoton,
-      whatsapp,
-      correoNotificacion,
-      whatsappNotificacion,
-      recibirPorCorreo,
-      recibirPorWhatsapp,
-      mercadoPagoToken,
-      publicKeyMP,
-      whatsappReservas,
-      aceptarReservasAuto,
-    }, { merge: true });
-
-    alert("Configuración guardada");
+    await setDoc(
+      ref,
+      {
+        logo,
+        nombre,
+        descripcion,
+        imagenPrincipal: imagen,
+        textoHero,
+        whatsapp,
+        colorFondo,
+        colorBoton,
+        googleMaps,
+        instagram,
+        facebook,
+        tiktok,
+        posicionBanner,
+        tamañoBanner,
+        textoUbicacion,
+      },
+      { merge: true }
+    );
+    alert("✅ Configuración guardada correctamente.");
   };
+
 
   const guardarProductoNuevo = async () => {
     if (!usuario) return;
@@ -349,6 +376,7 @@ export default function Admin() {
           <button onClick={guardarConfiguracion} style={{ backgroundColor: "#3483fa", color: "white", border: "none", padding: "0.6rem 1.5rem", borderRadius: "6px", cursor: "pointer" }}>
             💾 Guardar configuración
           </button>
+          
 
           <p style={{ marginTop: "1rem", fontSize: "0.9rem", color: "#555" }}>
             Podés obtener tus claves desde:{" "}
@@ -389,7 +417,7 @@ export default function Admin() {
                 nombre,
                 email: correo,
                 tiendaId: usuario?.uid || "",
-                
+
               });
 
               alert("Empleado creado correctamente (debe iniciar sesión con Google)");
@@ -680,40 +708,111 @@ export default function Admin() {
         </>
       )}
       {/* 🎨 Sección: Estética */}
-      {seccionActiva === "estetica" && (
-        <>
-          <h3>Configuración visual de la tienda</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-            <label>Logo (URL)
-              <input value={logo} onChange={(e) => setLogo(e.target.value)} />
-            </label>
-            <label>Nombre de la tienda
-              <input value={nombre} onChange={(e) => setNombre(e.target.value)} />
-            </label>
-            <label>Descripción de la tienda
-              <textarea value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
-            </label>
-            <label>Imagen principal (URL)
-              <input value={imagen} onChange={(e) => setImagen(e.target.value)} />
-            </label>
-            <label>Texto principal (Hero)
-              <input value={textoHero} onChange={(e) => setTextoHero(e.target.value)} />
-            </label>
-            <label>WhatsApp para contacto
-              <input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
-            </label>
-            <label>Color de fondo
-              <input type="color" value={colorFondo} onChange={(e) => setColorFondo(e.target.value)} />
-            </label>
-            <label>Color de botones
-              <input type="color" value={colorBoton} onChange={(e) => setColorBoton(e.target.value)} />
-            </label>
-          </div>
-          <button onClick={guardarConfiguracion} style={{ marginTop: "1.5rem", backgroundColor: "#3483fa", color: "white", border: "none", padding: "0.6rem 1.5rem", borderRadius: "6px", cursor: "pointer" }}>
-            💾 Guardar configuración
-          </button>
-        </>
-      )}
+     {seccionActiva === "estetica" && (
+  <>
+    <h3>Configuración visual de la tienda</h3>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+      <label>Logo (URL)
+        <input value={logo} onChange={(e) => setLogo(e.target.value)} />
+      </label>
+      <label>Nombre de la tienda
+        <input value={nombre} onChange={(e) => setNombre(e.target.value)} />
+      </label>
+      <label>Descripción de la tienda
+        <textarea value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
+      </label>
+      <label>Imagen principal (URL)
+        <input value={imagen} onChange={(e) => setImagen(e.target.value)} />
+      </label>
+      <label>Texto principal (Hero)
+        <input value={textoHero} onChange={(e) => setTextoHero(e.target.value)} />
+      </label>
+      <label>WhatsApp para contacto
+        <input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
+      </label>
+      <label>Color de fondo
+        <input type="color" value={colorFondo} onChange={(e) => setColorFondo(e.target.value)} />
+      </label>
+      <label>Color de botones
+        <input type="color" value={colorBoton} onChange={(e) => setColorBoton(e.target.value)} />
+      </label>
+
+      <label>Instagram
+        <input value={instagram} onChange={(e) => setInstagram(e.target.value)} />
+      </label>
+      <label>Facebook
+        <input value={facebook} onChange={(e) => setFacebook(e.target.value)} />
+      </label>
+      <label>TikTok
+        <input value={tiktok} onChange={(e) => setTiktok(e.target.value)} />
+      </label>
+      <label>
+  Mapa (iframe de Google Maps)
+  <textarea
+    value={googleMaps}
+    onChange={(e) => setGoogleMaps(e.target.value)}
+    placeholder="<iframe src='https://www.google.com/maps/embed?...'></iframe>"
+    style={{ width: "100%", height: "120px", marginBottom: "0.5rem" }}
+  />
+  <small style={{ color: "#555" }}>
+    📍 Para mostrar el mapa de tu tienda, ingresá a{" "}
+    <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer">
+      Google Maps
+    </a>, buscá tu local, tocá en <strong>Compartir</strong> → <strong>Incorporar un mapa</strong> y copiá el código que empieza con <code>&lt;iframe...</code>. Pegalo acá tal cual.
+  </small>
+  <label>
+  Texto informativo junto al mapa
+  <textarea
+    value={textoUbicacion}
+    onChange={(e) => setTextoUbicacion(e.target.value)}
+    placeholder="Nos encontramos en el centro de la ciudad. Vení a visitarnos o hacé tu pedido desde casa."
+    style={{ width: "100%", height: "100px", marginBottom: "0.5rem" }}
+  />
+</label>
+
+</label>
+      <label>Posición del banner (e.g. 'center', 'top')
+        <input value={posicionBanner} onChange={(e) => setPosicionBanner(e.target.value)} />
+      </label>
+      <label>Tamaño del banner (e.g. 'cover', 'contain')
+        <input value={tamañoBanner} onChange={(e) => setTamañoBanner(e.target.value)} />
+      </label>
+    </div>
+
+    <button
+      onClick={guardarConfiguracion}
+      style={{
+        marginTop: "1.5rem",
+        backgroundColor: "#3483fa",
+        color: "white",
+        border: "none",
+        padding: "0.6rem 1.5rem",
+        borderRadius: "6px",
+        cursor: "pointer"
+      }}
+    >
+      💾 Guardar configuración
+    </button>
+
+    {/* Vista previa en vivo */}
+    <VistaPreviaTienda
+      logo={logo}
+      nombre={nombre}
+      descripcion={descripcion}
+      imagen={imagen}
+      textoHero={textoHero}
+      colorFondo={colorFondo}
+      colorBoton={colorBoton}
+      instagram={instagram}
+      facebook={facebook}
+      tiktok={tiktok}
+      googleMaps={googleMaps}
+      posicionBanner={posicionBanner}
+      tamañoBanner={tamañoBanner}
+    />
+  </>
+)}
+
 
 
       {seccionActiva === "pagos" && (

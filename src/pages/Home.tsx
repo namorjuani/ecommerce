@@ -7,6 +7,9 @@ import "./css/Home.css";
 import CarruselPorCategoria from "../Components/CarruselPorCategoria";
 import CategoriasDestacadas from "../Components/CategoriasDestacadas";
 import BarraBusqueda from "../Components/BarraBusqueda";
+import UbicacionTienda from "../Components/UbicacionTienda";
+import Footer from "../Components/Footer";
+import { useAuth } from "../context/AuthContext"; // solo si lo estás usando ya
 
 interface Producto {
   id: string;
@@ -35,6 +38,14 @@ export default function Home() {
   const { cliente, iniciarSesion, cerrarSesion } = useCliente();
   const navigate = useNavigate();
 
+  const [storeInfo, setStoreInfo] = useState<any>({});
+const { usuario } = useAuth(); // si ya lo usás en otras páginas, podés omitirlo
+
+const [googleMaps, setGoogleMaps] = useState("");
+const [textoUbicacion, setTextoUbicacion] = useState("");
+
+
+
   useEffect(() => {
     const fetchData = async () => {
       const tiendaId = localStorage.getItem("userId") || "d5gnEacrofgn8NxTOdRgwzZRow73";
@@ -43,14 +54,18 @@ export default function Home() {
       const ref = doc(db, "tiendas", tiendaId);
       const snap = await getDoc(ref);
       if (snap.exists()) {
-        const data = snap.data();
-        setNombre(data.nombre || "Mi tienda");
-        setImagen(data.imagen || "");
-        setWhatsapp(data.whatsapp || "");
-        setAlturaBanner(data.alturaBanner || "100px");
-        setPosicionBanner(data.posicionBanner || "center");
-        setTamañoBanner(data.tamañoBanner || "cover");
-      }
+  const data = snap.data();
+  setStoreInfo(data); // 👈 Acá guardás todo junto
+  setNombre(data.nombre || "Mi tienda");
+  setImagen(data.imagen || "");
+  setWhatsapp(data.whatsapp || "");
+  setAlturaBanner(data.alturaBanner || "100px");
+  setPosicionBanner(data.posicionBanner || "center");
+  setTamañoBanner(data.tamañoBanner || "cover");
+  setGoogleMaps(data.googleMaps || "");
+setTextoUbicacion(data.textoUbicacion || "");
+}
+
 
       const productosRef = collection(db, "tiendas", tiendaId, "productos");
       const q = query(productosRef);
@@ -170,6 +185,12 @@ export default function Home() {
           />
         ))}
       </div>
+      <UbicacionTienda
+  googleMaps={googleMaps}
+  textoUbicacion={textoUbicacion}
+/>
+
+
 
       {/* WhatsApp */}
       {whatsapp && (
@@ -182,6 +203,8 @@ export default function Home() {
           💬
         </a>
       )}
+      
+      <Footer />
     </div>
   );
 }
