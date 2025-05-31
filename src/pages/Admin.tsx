@@ -20,6 +20,8 @@ import { deleteDoc } from "firebase/firestore";
 import Swal from "sweetalert2";
 import VistaPreviaTienda from "../Components/VistaPreviaTienda";
 import UbicacionTienda from "../Components/UbicacionTienda";
+import EsteticaCategorias from "../Components/EsteticaCategorias";
+
 
 
 interface Reserva {
@@ -746,6 +748,7 @@ export default function Admin() {
       <label>TikTok
         <input value={tiktok} onChange={(e) => setTiktok(e.target.value)} />
       </label>
+      <EsteticaCategorias />
       <label>
   Mapa (iframe de Google Maps)
   <textarea

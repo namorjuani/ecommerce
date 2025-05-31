@@ -9,7 +9,7 @@ import CategoriasDestacadas from "../Components/CategoriasDestacadas";
 import BarraBusqueda from "../Components/BarraBusqueda";
 import UbicacionTienda from "../Components/UbicacionTienda";
 import Footer from "../Components/Footer";
-import { useAuth } from "../context/AuthContext"; // solo si lo estás usando ya
+import { useAuth } from "../context/AuthContext";
 
 interface Producto {
   id: string;
@@ -23,7 +23,6 @@ interface Producto {
   precioTotal?: number;
 }
 
-
 export default function Home() {
   const [nombre, setNombre] = useState("Mi tienda");
   const [imagen, setImagen] = useState("");
@@ -35,16 +34,19 @@ export default function Home() {
   const [posicionBanner, setPosicionBanner] = useState("center");
   const [tamañoBanner, setTamañoBanner] = useState("cover");
 
-  const { cliente, iniciarSesion, cerrarSesion } = useCliente();
+  const { cliente } = useCliente();
   const navigate = useNavigate();
 
   const [storeInfo, setStoreInfo] = useState<any>({});
-const { usuario } = useAuth(); // si ya lo usás en otras páginas, podés omitirlo
+  const { usuario } = useAuth();
 
-const [googleMaps, setGoogleMaps] = useState("");
-const [textoUbicacion, setTextoUbicacion] = useState("");
+  const [googleMaps, setGoogleMaps] = useState("");
+  const [textoUbicacion, setTextoUbicacion] = useState("");
+  const [cat1, setCat1] = useState("");
+  const [cat2, setCat2] = useState("");
 
-
+  const [categoriaFiltrada, setCategoriaFiltrada] = useState<string | null>(null);
+  const [mostrarMasCategorias, setMostrarMasCategorias] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -54,18 +56,19 @@ const [textoUbicacion, setTextoUbicacion] = useState("");
       const ref = doc(db, "tiendas", tiendaId);
       const snap = await getDoc(ref);
       if (snap.exists()) {
-  const data = snap.data();
-  setStoreInfo(data); // 👈 Acá guardás todo junto
-  setNombre(data.nombre || "Mi tienda");
-  setImagen(data.imagen || "");
-  setWhatsapp(data.whatsapp || "");
-  setAlturaBanner(data.alturaBanner || "100px");
-  setPosicionBanner(data.posicionBanner || "center");
-  setTamañoBanner(data.tamañoBanner || "cover");
-  setGoogleMaps(data.googleMaps || "");
-setTextoUbicacion(data.textoUbicacion || "");
-}
-
+        const data = snap.data();
+        setStoreInfo(data);
+        setNombre(data.nombre || "Mi tienda");
+        setImagen(data.imagen || "");
+        setWhatsapp(data.whatsapp || "");
+        setAlturaBanner(data.alturaBanner || "100px");
+        setPosicionBanner(data.posicionBanner || "center");
+        setTamañoBanner(data.tamañoBanner || "cover");
+        setGoogleMaps(data.googleMaps || "");
+        setTextoUbicacion(data.textoUbicacion || "");
+        setCat1(data.categoriaDestacada1 || "");
+        setCat2(data.categoriaDestacada2 || "");
+      }
 
       const productosRef = collection(db, "tiendas", tiendaId, "productos");
       const q = query(productosRef);
@@ -76,96 +79,138 @@ setTextoUbicacion(data.textoUbicacion || "");
         id: doc.id,
       }));
 
-      console.log("✅ Productos en Firestore:", querySnapshot.docs.map((d) => d.data()));
-      console.log("✅ Productos mapeados:", productosData);
       setProductos(productosData);
     };
 
     fetchData();
   }, []);
 
+  const categoriasExtras = Array.from(new Set(productos.map((p) => p.categoria)))
+    .filter((cat) => cat !== cat1 && cat !== cat2);
+
   return (
     <div className="home-container">
-      <div className="navbar">
-        <div style={{ fontWeight: "bold" }}>{nombre}</div>
-        <div>
-          {cliente ? (
-            <div style={{ position: "relative" }}>
-              <div
-                onClick={() => setMostrarMenu(!mostrarMenu)}
-                style={{
-                  width: "40px",
-                  height: "40px",
-                  borderRadius: "50%",
-                  backgroundColor: "#ddd",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  fontWeight: "bold",
-                }}
-              >
-                {cliente.photoURL ? (
-                  <img
-                    src={cliente.photoURL}
-                    alt="Perfil"
-                    style={{ width: "100%", height: "100%", borderRadius: "50%" }}
-                  />
-                ) : (
-                  <span>
-                    {cliente.displayName
-                      ?.split(" ")
-                      .map((n) => n[0])
-                      .join("")
-                      .toUpperCase()}
-                  </span>
-                )}
-              </div>
+      <div style={{ position: "sticky", top: 0, zIndex: 999, backgroundColor: "#fff" }}>
+        <div
+          style={{
+            backgroundImage: `url(${imagen})`,
+            backgroundPosition: posicionBanner,
+            backgroundRepeat: "no-repeat",
+            backgroundSize: tamañoBanner,
+            borderBottom: "1px solid rgba(0, 0, 0, .1)",
+            height: alturaBanner,
+            position: "relative",
+          }}
+        >
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "6px",
+              boxSizing: "border-box",
+              display: "flex",
+              alignItems: "center",
+              padding: "10px 12px",
+              height: "60px",
+              position: "absolute",
+              bottom: "16px",
+              left: "16px",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+              gap: "10px",
+            }}
+          >
+            <img
+              src={storeInfo.logo || "https://via.placeholder.com/40"}
+              alt="Logo"
+              style={{ width: "40px", height: "40px", borderRadius: "4px", objectFit: "contain" }}
+            />
+            <span style={{ fontWeight: 600 }}>{nombre}</span>
+            <img
+              src="https://cdn-icons-png.flaticon.com/512/1828/1828640.png"
+              alt="verificado"
+              style={{ width: "18px", height: "18px", marginLeft: "4px" }}
+            />
+          </div>
+        </div>
 
-              {mostrarMenu && (
+        <div
+          style={{
+            backgroundColor: "#fff",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "10px 20px",
+            borderBottom: "1px solid #eee",
+            boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+          }}
+        >
+          <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+            <span style={{ cursor: "pointer", color: "#333" }} onClick={() => setCategoriaFiltrada(null)}>Inicio</span>
+            <span style={{ cursor: "pointer", color: "#333" }} onClick={() => setCategoriaFiltrada(cat1)}>{cat1}</span>
+            <span style={{ cursor: "pointer", color: "#333" }} onClick={() => setCategoriaFiltrada(cat2)}>{cat2}</span>
+            <div style={{ position: "relative" }}>
+              <span onClick={() => setMostrarMasCategorias(!mostrarMasCategorias)} style={{ cursor: "pointer", color: "#333" }}>
+                Más categorías ▼
+              </span>
+              {mostrarMasCategorias && (
                 <div
                   style={{
                     position: "absolute",
-                    top: "45px",
-                    right: 0,
                     backgroundColor: "#fff",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                    top: "25px",
+                    left: 0,
+                    border: "1px solid #ddd",
                     borderRadius: "6px",
-                    overflow: "hidden",
+                    padding: "8px",
+                    boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
                     zIndex: 999,
                   }}
                 >
-                  <button onClick={() => navigate("/historial")}>🧾 Historial de compras</button>
-                  <button onClick={() => navigate("/datos-envio")}>📦 Datos de envío</button>
-                  <button onClick={cerrarSesion}>🚪 Cerrar sesión</button>
+                  {categoriasExtras.map((cat) => (
+                    <div
+                      key={cat}
+                      style={{ cursor: "pointer", padding: "4px 0" }}
+                      onClick={() => {
+                        setCategoriaFiltrada(cat);
+                        setMostrarMasCategorias(false);
+                      }}
+                    >
+                      {cat}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
-          ) : (
-            <button onClick={iniciarSesion} style={{ padding: "0.4rem 0.8rem" }}>
-              Iniciar sesión
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <a href="https://facebook.com" target="_blank" rel="noreferrer">
+              <img src="https://cdn-icons-png.flaticon.com/512/145/145802.png" alt="fb" style={{ width: "20px" }} />
+            </a>
+            <a href="https://instagram.com" target="_blank" rel="noreferrer">
+              <img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" alt="ig" style={{ width: "20px" }} />
+            </a>
+            <button
+              onClick={() => {
+                const url = window.location.href;
+                if (navigator.share) {
+                  navigator.share({ url });
+                } else {
+                  navigator.clipboard.writeText(url);
+                  alert("Enlace copiado al portapapeles");
+                }
+              }}
+              style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+            >
+              <img src="https://cdn-icons-png.flaticon.com/512/1828/1828911.png" alt="Compartir" style={{ width: "20px" }} />
             </button>
-          )}
+          </div>
         </div>
       </div>
 
-      {/* Banner */}
-      <div
-        style={{
-          backgroundImage: `url(${imagen})`,
-          backgroundPosition: posicionBanner,
-          backgroundRepeat: "no-repeat",
-          backgroundSize: tamañoBanner,
-          borderBottom: "1px solid rgba(0, 0, 0, .1)",
-          height: alturaBanner,
-          position: "relative",
-        }}
-      />
-
-        <BarraBusqueda />
-      {/* 🔹 Acá van las categorías destacadas */}
+      <BarraBusqueda />
       <CategoriasDestacadas />
-      {/* Productos */}
+
+      
       <div className="productos">
         <h2>Productos por categoría</h2>
         {Object.entries(
@@ -174,25 +219,21 @@ setTextoUbicacion(data.textoUbicacion || "");
             acc[cat] = acc[cat] || [];
             acc[cat].push(prod);
             return acc;
-
           }, {})
-        ).map(([categoria, productosCat], i) => (
-          <CarruselPorCategoria
-            key={categoria}
-            categoria={categoria}
-            productos={productosCat}
-            carruselId={`carrusel-${i}`}
-          />
-        ))}
+        )
+          .filter(([cat]) => !categoriaFiltrada || cat === categoriaFiltrada)
+          .map(([categoria, productosCat], i) => (
+            <CarruselPorCategoria
+              key={categoria}
+              categoria={categoria}
+              productos={productosCat}
+              carruselId={`carrusel-${i}`}
+            />
+          ))}
       </div>
-      <UbicacionTienda
-  googleMaps={googleMaps}
-  textoUbicacion={textoUbicacion}
-/>
 
+      <UbicacionTienda googleMaps={googleMaps} textoUbicacion={textoUbicacion} />
 
-
-      {/* WhatsApp */}
       {whatsapp && (
         <a
           href={`https://wa.me/${whatsapp.replace(/\D/g, "")}`}
@@ -203,7 +244,7 @@ setTextoUbicacion(data.textoUbicacion || "");
           💬
         </a>
       )}
-      
+
       <Footer />
     </div>
   );

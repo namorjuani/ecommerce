@@ -109,3 +109,11 @@ footer {
   background: #ccc;
   border-radius: 4px;
 }
+
+.menu-categorias {
+  display: none;
+}
+
+div:hover > .menu-categorias {
+  display: block;
+}
