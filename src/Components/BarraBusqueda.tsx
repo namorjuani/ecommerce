@@ -2,13 +2,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { FaSearch } from "react-icons/fa";
 import "./css/BarraBusqueda.css";
 
 export default function BarraBusqueda() {
   const [termino, setTermino] = useState("");
   const navigate = useNavigate();
   const { tiendaNombre } = useAuth(); // Asegurate de exponer tiendaNombre desde AuthContext
+const ShoppingCart = () => <span style={{ fontSize: "1.5rem" }}>🛒</span>;
 
   const buscarProducto = () => {
     if (termino.trim() === "") return;
@@ -30,7 +30,7 @@ export default function BarraBusqueda() {
       />
       <span className="nombre-tienda">en {tiendaNombre || "Tu tienda"}</span>
       <button onClick={buscarProducto}>
-        <FaSearch />
+
       </button>
     </div>
   );

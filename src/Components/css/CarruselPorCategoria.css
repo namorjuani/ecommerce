@@ -1,0 +1,7 @@
+.carrusel-scroll {
+  -ms-overflow-style: none;    /* Edge/IE */
+  scrollbar-width: none;       /* Firefox */
+}
+.carrusel-scroll::-webkit-scrollbar {
+  display: none;               /* Chrome/Safari */
+}

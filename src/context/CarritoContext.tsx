@@ -7,8 +7,10 @@ interface Producto {
   imagen: string;
   stock: number;
   tipo: "producto" | "servicio";
-  cantidad?: number; // agregado
+  cantidad?: number;
+  variante?: string; // ✅ AÑADIR ESTA LÍNEA
 }
+
 
 interface CarritoContextType {
   carrito: Producto[];
@@ -26,11 +28,11 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
 
   const agregarAlCarrito = (producto: Producto) => {
     setCarrito((prev) => {
-      const existente = prev.find((p) => p.id === producto.id);
+      const existente = prev.find((p) => p.id === producto.id && p.variante === producto.variante);
 
       if (existente) {
         return prev.map((p) =>
-          p.id === producto.id && p.cantidad! < p.stock
+          p.id === producto.id && p.variante === producto.variante && p.cantidad! < p.stock
             ? { ...p, cantidad: p.cantidad! + 1 }
             : p
         );

@@ -1,11 +1,11 @@
-// src/pages/FormaEntrega.tsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { useCliente } from "../context/ClienteContext";
 import { useCarrito } from "../context/CarritoContext";
 import { db } from "../firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+
 
 export default function FormaEntrega() {
   const [envio, setEnvio] = useState("");
@@ -21,9 +21,10 @@ export default function FormaEntrega() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchData = async () => {
-      const tiendaId = localStorage.getItem("userId");
-      if (tiendaId && cliente) {
+    const tiendaId = localStorage.getItem("userId");
+
+    if (cliente && tiendaId) {
+      const fetchData = async () => {
         const ref = doc(db, "tiendas", tiendaId, "clientes", cliente.uid);
         const snap = await getDoc(ref);
         if (snap.exists()) {
@@ -31,37 +32,72 @@ export default function FormaEntrega() {
           setClienteInfo(datos);
           localStorage.setItem("cliente", JSON.stringify(datos));
         }
+      };
+      fetchData();
+    } else {
+      // Si no está logueado, intento cargar de localStorage
+      const temp = localStorage.getItem("datosEnvioTemp");
+      if (temp) {
+        setClienteInfo(JSON.parse(temp));
       }
-    };
-
-    fetchData();
+    }
   }, [cliente]);
 
   const total = calcularTotal();
 
   const continuar = async () => {
-    if (!envio) {
-      alert("Selecciona una forma de entrega");
-      return;
+  if (!envio) {
+    alert("Selecciona una forma de entrega");
+    return;
+  }
+
+  const tiendaId = localStorage.getItem("userId");
+
+  if (envio === "domicilio") {
+    if (!clienteInfo?.direccion) {
+      const formValues = await Swal.fire({
+        title: "Completá tus datos de envío",
+        html: `
+          <input id="swal-nombre" class="swal2-input" placeholder="Nombre completo">
+          <input id="swal-dni" class="swal2-input" placeholder="DNI">
+          <input id="swal-direccion" class="swal2-input" placeholder="Dirección">
+          <input id="swal-telefono" class="swal2-input" placeholder="Teléfono">
+          <input id="swal-email" class="swal2-input" placeholder="Email">
+        `,
+        focusConfirm: false,
+        preConfirm: () => ({
+          nombre: (document.getElementById("swal-nombre") as HTMLInputElement).value,
+          dni: (document.getElementById("swal-dni") as HTMLInputElement).value,
+          direccion: (document.getElementById("swal-direccion") as HTMLInputElement).value,
+          telefono: (document.getElementById("swal-telefono") as HTMLInputElement).value,
+          email: (document.getElementById("swal-email") as HTMLInputElement).value,
+        }),
+      });
+
+      if (!formValues.value || !formValues.value.nombre) {
+        Swal.fire("Error", "Debes completar todos los campos", "error");
+        return;
+      }
+
+      const datos = formValues.value;
+
+      if (cliente && tiendaId) {
+        const ref = doc(db, "tiendas", tiendaId, "clientes", cliente.uid);
+        await setDoc(ref, datos);
+        localStorage.setItem("cliente", JSON.stringify(datos));
+        localStorage.setItem("clienteId", cliente.uid);
+      } else {
+        localStorage.setItem("datosEnvioAnonimo", JSON.stringify(datos));
+      }
+
+      setClienteInfo(datos);
     }
+  }
 
-    const tiendaId = localStorage.getItem("userId");
-    if (!tiendaId || !cliente) return;
+  localStorage.setItem("formaEntrega", envio);
+  navigate("/forma-pago");
+};
 
-    const ref = doc(db, "tiendas", tiendaId, "clientes", cliente.uid);
-    const snap = await getDoc(ref);
-
-    if (!snap.exists()) {
-      alert("No se encontraron los datos del cliente.");
-      return;
-    }
-
-    const clienteActualizado = snap.data();
-    localStorage.setItem("cliente", JSON.stringify(clienteActualizado));
-    localStorage.setItem("formaEntrega", envio);
-
-    navigate("/forma-pago");
-  };
 
   return (
     <div style={{ maxWidth: "1000px", margin: "auto", padding: "2rem" }}>

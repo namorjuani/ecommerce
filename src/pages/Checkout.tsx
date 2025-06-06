@@ -1,16 +1,8 @@
 // src/pages/Checkout.tsx
 import "../pages/css/Checkout.css";
 import { useCarrito } from "../context/CarritoContext";
-import { db } from "../firebase";
-import {
-  doc,
-  getDoc,
-  collection,
-  setDoc,
-} from "firebase/firestore";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
-import { useCliente } from "../context/ClienteContext";
 
 export default function Checkout() {
   const {
@@ -20,80 +12,15 @@ export default function Checkout() {
     calcularTotal,
   } = useCarrito();
 
-  const { cliente } = useCliente();
   const navigate = useNavigate();
 
-  const finalizarCompra = async () => {
-    const tiendaId = localStorage.getItem("userId");
-    if (!tiendaId) {
-      alert("No se encontró el ID de la tienda.");
+  const finalizarCompra = () => {
+    if (carrito.length === 0) {
+      Swal.fire("Carrito vacío", "Agrega productos antes de continuar", "warning");
       return;
     }
 
-    // Verificar si el cliente ya tiene datos guardados
-    let datosGuardados: any = null;
-    if (cliente) {
-      const ref = doc(db, "tiendas", tiendaId, "clientes", cliente.uid);
-      const snap = await getDoc(ref);
-      if (snap.exists()) {
-        datosGuardados = snap.data();
-      }
-    }
-
-    let clienteFinal;
-
-    if (datosGuardados) {
-      clienteFinal = datosGuardados;
-    } else {
-      const formValues = await Swal.fire({
-        title: "Ingresa tus datos para el envío",
-        html: `
-          <input id="swal-nombre" class="swal2-input" placeholder="Nombre completo">
-          <input id="swal-dni" class="swal2-input" placeholder="DNI">
-          <input id="swal-direccion" class="swal2-input" placeholder="Dirección">
-          <input id="swal-telefono" class="swal2-input" placeholder="Teléfono">
-          <input id="swal-email" class="swal2-input" placeholder="Email">
-        `,
-        focusConfirm: false,
-        preConfirm: () => ({
-          nombre: (document.getElementById("swal-nombre") as HTMLInputElement).value,
-          dni: (document.getElementById("swal-dni") as HTMLInputElement).value,
-          direccion: (document.getElementById("swal-direccion") as HTMLInputElement).value,
-          telefono: (document.getElementById("swal-telefono") as HTMLInputElement).value,
-          email: (document.getElementById("swal-email") as HTMLInputElement).value,
-        }),
-      });
-
-      if (!formValues.value || !formValues.value.nombre) {
-        Swal.fire("Error", "Debes completar todos los campos", "error");
-        return;
-      }
-
-      clienteFinal = formValues.value;
-
-      if (cliente) {
-        const ref = doc(db, "tiendas", tiendaId, "clientes", cliente.uid);
-        await setDoc(ref, clienteFinal);
-      }
-    }
-
-    // Guardar carrito y cliente en localStorage
-    localStorage.setItem("cliente", JSON.stringify(clienteFinal));
-    localStorage.setItem("carrito", JSON.stringify(carrito));
-
-    Swal.fire({
-      title: "Procesando pedido...",
-      didOpen: () => {
-        Swal.showLoading();
-      },
-      allowOutsideClick: false,
-      allowEscapeKey: false,
-    });
-
-    setTimeout(() => {
-      Swal.close();
-      navigate("/forma-entrega");
-    }, 1200);
+    navigate("/forma-entrega");
   };
 
   return (

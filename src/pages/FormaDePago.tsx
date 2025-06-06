@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { useCarrito } from "../context/CarritoContext";
 import { db } from "../firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, writeBatch } from "firebase/firestore";
 
 declare global {
   interface Window {
@@ -11,18 +11,28 @@ declare global {
   }
 }
 
+// Definimos el tipo del producto del carrito localmente
+interface ProductoCarrito {
+  id: string;
+  nombre: string;
+  precio: number;
+  imagen: string;
+  stock: number;
+  tipo: "producto" | "servicio";
+  cantidad?: number;
+  variante?: string; // para evitar error de propiedad inexistente
+}
+
 export default function FormaDePago() {
   const [formaPago, setFormaPago] = useState("");
-  const [carrito, setCarrito] = useState<any[]>([]);
   const navigate = useNavigate();
-  const { vaciarCarrito } = useCarrito();
+  const { carrito, vaciarCarrito } = useCarrito();
   const [publicKey, setPublicKey] = useState("");
 
   useEffect(() => {
     const userId = localStorage.getItem("userId");
     if (!userId) return;
 
-    // Cargar publicKey desde Firebase
     const cargarConfig = async () => {
       const ref = doc(db, "tiendas", userId);
       const snap = await getDoc(ref);
@@ -34,7 +44,6 @@ export default function FormaDePago() {
 
     cargarConfig();
 
-    // Cargar SDK
     const script = document.createElement("script");
     script.src = "https://sdk.mercadopago.com/js/v2";
     script.async = true;
@@ -47,18 +56,53 @@ export default function FormaDePago() {
   }, [publicKey]);
 
   useEffect(() => {
-    const data = localStorage.getItem("carrito");
-    if (data) setCarrito(JSON.parse(data));
+    const clienteId = localStorage.getItem("clienteId");
+    const datosAnonimos = localStorage.getItem("datosEnvioAnonimo");
+    if (!clienteId && !datosAnonimos) {
+      Swal.fire("Faltan datos", "Por favor completá tus datos de envío antes de continuar", "warning");
+      navigate("/forma-entrega");
+    }
   }, []);
 
-  const total = carrito.reduce((sum, prod) => sum + prod.precio * (prod.cantidad || 1), 0);
+  const total = carrito.reduce((sum, prod) => sum + prod.precio * (prod.cantidad ?? 1), 0);
+
+  const descontarStock = async () => {
+    const tiendaId = localStorage.getItem("userId");
+    if (!tiendaId) return;
+
+    const batch = writeBatch(db);
+
+    for (const item of carrito as ProductoCarrito[]) {
+      const prodRef = doc(db, "tiendas", tiendaId, "productos", item.id);
+      const snap = await getDoc(prodRef);
+      if (!snap.exists()) continue;
+
+      const data = snap.data();
+
+      if (item.variante) {
+        const nuevasVariantes = (data.variantes || []).map((v: any) =>
+          v.nombre === item.variante
+            ? { ...v, stock: Math.max(0, v.stock - (item.cantidad ?? 1)) }
+            : v
+        );
+        batch.update(prodRef, { variantes: nuevasVariantes });
+      } else {
+        const nuevoStock = Math.max(0, (data.stock || 0) - (item.cantidad ?? 1));
+        batch.update(prodRef, { stock: nuevoStock });
+      }
+    }
+
+    await batch.commit();
+  };
 
   const finalizar = async () => {
     if (!formaPago) return alert("Selecciona una forma de pago");
 
     if (formaPago === "transferencia") {
+      await descontarStock();
       Swal.fire("Gracias", "Te enviaremos los datos bancarios por WhatsApp", "info");
       vaciarCarrito();
+      localStorage.removeItem("datosEnvioAnonimo");
       navigate("/compra-realizada");
       return;
     }
@@ -92,11 +136,11 @@ export default function FormaDePago() {
 
         if (!data.preferenceId) throw new Error("No se obtuvo preferenceId");
 
-        // Redirigir al checkout de Mercado Pago
-        window.location.href = `https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=${data.preferenceId}`;
-
-        localStorage.removeItem("carrito");
+        await descontarStock();
         vaciarCarrito();
+        localStorage.removeItem("datosEnvioAnonimo");
+
+        window.location.href = `https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=${data.preferenceId}`;
       } catch (error) {
         console.error(error);
         Swal.fire("Error", "No se pudo procesar el pago", "error");

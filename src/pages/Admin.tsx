@@ -116,6 +116,9 @@ export default function Admin() {
   const [posicionBanner, setPosicionBanner] = useState("center");
   const [tamañoBanner, setTamañoBanner] = useState("cover");
 
+  const [linkInstagram, setLinkInstagram] = useState("");
+  const [linkFacebook, setLinkFacebook] = useState("");
+
 
   const cellStyle = {
     padding: "8px",
@@ -173,6 +176,9 @@ export default function Admin() {
         setMercadoPagoToken(data.mercadoPagoToken || "");
         setPublicKeyMP(data.publicKeyMP || "");
 
+        setLinkInstagram(data.linkInstagram || "");
+        setLinkFacebook(data.linkFacebook || "");
+
         // NUEVOS CAMPOS DE PERSONALIZACIÓN
         setGoogleMaps(data.googleMaps || "");
         setInstagram(data.instagram || "");
@@ -181,6 +187,9 @@ export default function Admin() {
         setPosicionBanner(data.posicionBanner || "center");
         setTamañoBanner(data.tamañoBanner || "cover");
         setTextoUbicacion(data.textoUbicacion || "");
+
+        setColorFondo(data.colorFondo || "#ffffff");
+
 
       }
 
@@ -240,6 +249,9 @@ export default function Admin() {
         posicionBanner,
         tamañoBanner,
         textoUbicacion,
+        linkInstagram,
+        linkFacebook,
+        
       },
       { merge: true }
     );
@@ -378,7 +390,7 @@ export default function Admin() {
           <button onClick={guardarConfiguracion} style={{ backgroundColor: "#3483fa", color: "white", border: "none", padding: "0.6rem 1.5rem", borderRadius: "6px", cursor: "pointer" }}>
             💾 Guardar configuración
           </button>
-          
+
 
           <p style={{ marginTop: "1rem", fontSize: "0.9rem", color: "#555" }}>
             Podés obtener tus claves desde:{" "}
@@ -710,111 +722,125 @@ export default function Admin() {
         </>
       )}
       {/* 🎨 Sección: Estética */}
-     {seccionActiva === "estetica" && (
-  <>
-    <h3>Configuración visual de la tienda</h3>
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-      <label>Logo (URL)
-        <input value={logo} onChange={(e) => setLogo(e.target.value)} />
-      </label>
-      <label>Nombre de la tienda
-        <input value={nombre} onChange={(e) => setNombre(e.target.value)} />
-      </label>
-      <label>Descripción de la tienda
-        <textarea value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
-      </label>
-      <label>Imagen principal (URL)
-        <input value={imagen} onChange={(e) => setImagen(e.target.value)} />
-      </label>
-      <label>Texto principal (Hero)
-        <input value={textoHero} onChange={(e) => setTextoHero(e.target.value)} />
-      </label>
-      <label>WhatsApp para contacto
-        <input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
-      </label>
-      <label>Color de fondo
-        <input type="color" value={colorFondo} onChange={(e) => setColorFondo(e.target.value)} />
-      </label>
-      <label>Color de botones
-        <input type="color" value={colorBoton} onChange={(e) => setColorBoton(e.target.value)} />
-      </label>
+      {seccionActiva === "estetica" && (
+        <>
+          <h3>Configuración visual de la tienda</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+            <label>Logo (URL)
+              <input value={logo} onChange={(e) => setLogo(e.target.value)} />
+            </label>
+            <label>Nombre de la tienda
+              <input value={nombre} onChange={(e) => setNombre(e.target.value)} />
+            </label>
+            <label>Descripción de la tienda
+              <textarea value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
+            </label>
+            <label>Imagen principal (URL)
+              <input value={imagen} onChange={(e) => setImagen(e.target.value)} />
+            </label>
+            <label>Texto principal (Hero)
+              <input value={textoHero} onChange={(e) => setTextoHero(e.target.value)} />
+            </label>
+            <label>WhatsApp para contacto
+              <input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
+            </label>
+            <label style={{ display: "block", marginTop: "1rem" }}>
+              Color de fondo:
+              <input
+                type="color"
+                value={colorFondo}
+                onChange={(e) => setColorFondo(e.target.value)}
+                style={{ marginLeft: "1rem", border: "none", background: "none" }}
+              />
+            </label>
+            <label>Color de botones
+              <input type="color" value={colorBoton} onChange={(e) => setColorBoton(e.target.value)} />
+            </label>
 
-      <label>Instagram
-        <input value={instagram} onChange={(e) => setInstagram(e.target.value)} />
-      </label>
-      <label>Facebook
-        <input value={facebook} onChange={(e) => setFacebook(e.target.value)} />
-      </label>
-      <label>TikTok
-        <input value={tiktok} onChange={(e) => setTiktok(e.target.value)} />
-      </label>
-      <EsteticaCategorias />
-      <label>
-  Mapa (iframe de Google Maps)
-  <textarea
-    value={googleMaps}
-    onChange={(e) => setGoogleMaps(e.target.value)}
-    placeholder="<iframe src='https://www.google.com/maps/embed?...'></iframe>"
-    style={{ width: "100%", height: "120px", marginBottom: "0.5rem" }}
-  />
-  <small style={{ color: "#555" }}>
-    📍 Para mostrar el mapa de tu tienda, ingresá a{" "}
-    <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer">
-      Google Maps
-    </a>, buscá tu local, tocá en <strong>Compartir</strong> → <strong>Incorporar un mapa</strong> y copiá el código que empieza con <code>&lt;iframe...</code>. Pegalo acá tal cual.
-  </small>
-  <label>
-  Texto informativo junto al mapa
-  <textarea
-    value={textoUbicacion}
-    onChange={(e) => setTextoUbicacion(e.target.value)}
-    placeholder="Nos encontramos en el centro de la ciudad. Vení a visitarnos o hacé tu pedido desde casa."
-    style={{ width: "100%", height: "100px", marginBottom: "0.5rem" }}
-  />
-</label>
+            <label>Link de Instagram:</label>
+            <input
+              type="text"
+              value={linkInstagram}
+              onChange={(e) => setLinkInstagram(e.target.value)}
+              placeholder="https://instagram.com/tu_tienda"
+            />
 
-</label>
-      <label>Posición del banner (e.g. 'center', 'top')
-        <input value={posicionBanner} onChange={(e) => setPosicionBanner(e.target.value)} />
-      </label>
-      <label>Tamaño del banner (e.g. 'cover', 'contain')
-        <input value={tamañoBanner} onChange={(e) => setTamañoBanner(e.target.value)} />
-      </label>
-    </div>
+            <label>Link de Facebook:</label>
+            <input
+              type="text"
+              value={linkFacebook}
+              onChange={(e) => setLinkFacebook(e.target.value)}
+              placeholder="https://facebook.com/tu_tienda"
+            />
 
-    <button
-      onClick={guardarConfiguracion}
-      style={{
-        marginTop: "1.5rem",
-        backgroundColor: "#3483fa",
-        color: "white",
-        border: "none",
-        padding: "0.6rem 1.5rem",
-        borderRadius: "6px",
-        cursor: "pointer"
-      }}
-    >
-      💾 Guardar configuración
-    </button>
+            <EsteticaCategorias />
+            <label>
+              Mapa (iframe de Google Maps)
+              <textarea
+                value={googleMaps}
+                onChange={(e) => setGoogleMaps(e.target.value)}
+                placeholder="<iframe src='https://www.google.com/maps/embed?...'></iframe>"
+                style={{ width: "100%", height: "120px", marginBottom: "0.5rem" }}
+              />
+              <small style={{ color: "#555" }}>
+                📍 Para mostrar el mapa de tu tienda, ingresá a{" "}
+                <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer">
+                  Google Maps
+                </a>, buscá tu local, tocá en <strong>Compartir</strong> → <strong>Incorporar un mapa</strong> y copiá el código que empieza con <code>&lt;iframe...</code>. Pegalo acá tal cual.
+              </small>
+              <label>
+                Texto informativo junto al mapa
+                <textarea
+                  value={textoUbicacion}
+                  onChange={(e) => setTextoUbicacion(e.target.value)}
+                  placeholder="Nos encontramos en el centro de la ciudad. Vení a visitarnos o hacé tu pedido desde casa."
+                  style={{ width: "100%", height: "100px", marginBottom: "0.5rem" }}
+                />
+              </label>
 
-    {/* Vista previa en vivo */}
-    <VistaPreviaTienda
-      logo={logo}
-      nombre={nombre}
-      descripcion={descripcion}
-      imagen={imagen}
-      textoHero={textoHero}
-      colorFondo={colorFondo}
-      colorBoton={colorBoton}
-      instagram={instagram}
-      facebook={facebook}
-      tiktok={tiktok}
-      googleMaps={googleMaps}
-      posicionBanner={posicionBanner}
-      tamañoBanner={tamañoBanner}
-    />
-  </>
-)}
+            </label>
+            <label>Posición del banner (e.g. 'center', 'top')
+              <input value={posicionBanner} onChange={(e) => setPosicionBanner(e.target.value)} />
+            </label>
+            <label>Tamaño del banner (e.g. 'cover', 'contain')
+              <input value={tamañoBanner} onChange={(e) => setTamañoBanner(e.target.value)} />
+            </label>
+          </div>
+
+          <button
+            onClick={guardarConfiguracion}
+            style={{
+              marginTop: "1.5rem",
+              backgroundColor: "#3483fa",
+              color: "white",
+              border: "none",
+              padding: "0.6rem 1.5rem",
+              borderRadius: "6px",
+              cursor: "pointer"
+            }}
+          >
+            💾 Guardar configuración
+          </button>
+
+          {/* Vista previa en vivo */}
+          <VistaPreviaTienda
+            logo={logo}
+            nombre={nombre}
+            descripcion={descripcion}
+            imagen={imagen}
+            textoHero={textoHero}
+            colorFondo={colorFondo}
+            colorBoton={colorBoton}
+            instagram={instagram}
+            facebook={facebook}
+            tiktok={tiktok}
+            googleMaps={googleMaps}
+            posicionBanner={posicionBanner}
+            tamañoBanner={tamañoBanner}
+          />
+          
+        </>
+      )}
 
 
 

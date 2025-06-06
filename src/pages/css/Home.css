@@ -2,8 +2,10 @@
 .home-container {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   padding: 1rem;
-  background-color: #f5f5f5;
   min-height: 100vh;
+  padding: 0 1rem;
+  max-width: 1280px;
+  margin: auto;
 }
 
 .hero {
@@ -30,7 +32,6 @@
 
 .product-card {
   background-color: white;
-  border: 1px solid #ddd;
   border-radius: 12px;
   width: 100%;
   max-width: 220px;
@@ -38,11 +39,22 @@
   text-align: center;
   text-decoration: none;
   color: inherit;
-  transition: box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
 }
 
-.product-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+.product-title {
+  font-weight: bold;
+  color: #333;
+  transition: color 0.2s ease;
+}
+
+/* 🔵 Hover solo al título */
+@media (hover: hover) and (pointer: fine) {
+  .product-card:hover .product-title {
+    color: #3483fa; /* Azul estilo Mercado Libre */
+  }
 }
 
 .product-card img {
@@ -60,7 +72,7 @@
 }
 
 .product-card p {
-  color: #3483fa;
+  color: #000000;
   font-weight: bold;
   font-size: 1.1rem;
 }
@@ -116,4 +128,30 @@ footer {
 
 div:hover > .menu-categorias {
   display: block;
+}
+
+@media (max-width: 600px) {
+  .product-card {
+    width: 140px !important;
+    padding: 0.8rem !important;
+  }
+
+  .product-card img {
+    height: 120px !important;
+  }
+}
+
+.header-container {
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Asegura que el Header ocupe todo el ancho real sin causar scroll lateral */
+.header-container {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }

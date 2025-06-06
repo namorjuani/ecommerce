@@ -37,6 +37,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.crearPreferencia = void 0;
+// functions/src/mercadoPago.ts
 const cors_1 = __importDefault(require("cors"));
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
@@ -84,7 +85,10 @@ exports.crearPreferencia = functions.https.onRequest((req, res) => {
                     Authorization: `Bearer ${mercadoPagoToken}`,
                 },
             });
-            res.json({ preferenceId: response.data.id });
+            res.json({
+                preferenceId: response.data.id,
+                init_point: response.data.init_point, // ✅ para redirigir directo
+            });
         }
         catch (error) {
             console.error("Error al crear preferencia:", error);
