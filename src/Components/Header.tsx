@@ -3,6 +3,10 @@ import { useState } from "react";
 import { useCliente } from "../context/ClienteContext";
 import BarraBusqueda from "./BarraBusqueda";
 import BotonCarritoHeader from "./BotonCarritoHeader";
+import CajaModalEmpleado from "./empleados/CajaModalEmpleado";
+import { useAuth } from "../context/AuthContext";
+import { FaBox } from "react-icons/fa";
+import { MdInventory2 } from "react-icons/md";
 
 interface Props {
     logo: string;
@@ -36,12 +40,13 @@ export default function Header({
     const { cliente, iniciarSesion, cerrarSesion } = useCliente();
     const [mostrarMenu, setMostrarMenu] = useState(false);
     const [mostrarMasCategorias, setMostrarMasCategorias] = useState(false);
+    const [mostrarCaja, setMostrarCaja] = useState(false);
     const navigate = useNavigate();
+    const { usuario } = useAuth();
+
 
     return (
-        
-        <div  className="header-container" style={{ position: "sticky", top: 0, zIndex: 999, backgroundColor: "#fff" }}>
-            
+        <div className="header-container" style={{ position: "sticky", top: 0, zIndex: 999, backgroundColor: "#fff" }}>
             {/* Banner */}
             <div
                 style={{
@@ -79,6 +84,7 @@ export default function Header({
                 </div>
             </div>
             <BarraBusqueda />
+
             {/* Nav categorías + redes + perfil */}
             <div
                 style={{
@@ -119,7 +125,6 @@ export default function Header({
                                 }}
                             >
                                 {categoriasExtras.map((cat) => (
-                                    
                                     <div
                                         key={cat}
                                         style={{ cursor: "pointer", padding: "4px 0" }}
@@ -171,6 +176,20 @@ export default function Header({
 
                     {/* Carrito visible siempre */}
                     <BotonCarritoHeader />
+
+                    {/* Caja para empleados */}
+{usuario && (
+  <button
+    onClick={() => setMostrarCaja(true)}
+    style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+    title="Ver caja"
+  >
+<MdInventory2 size={24} title="Caja" style={{ cursor: "pointer" }} />
+
+
+
+  </button>
+)}
 
                     {/* Perfil */}
                     {cliente ? (
@@ -228,8 +247,8 @@ export default function Header({
                 </div>
             </div>
 
-            {/* Buscador */}
-
+            {/* Caja modal empleado */}
+            {mostrarCaja && <CajaModalEmpleado visible={mostrarCaja} onClose={() => setMostrarCaja(false)} />}
         </div>
     );
 }

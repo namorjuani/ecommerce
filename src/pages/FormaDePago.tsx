@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { useCarrito } from "../context/CarritoContext";
 import { db } from "../firebase";
-import { doc, getDoc, writeBatch } from "firebase/firestore";
+import { doc, getDoc, writeBatch, updateDoc } from "firebase/firestore";
+import { useAuth } from "../context/AuthContext";
 
 declare global {
   interface Window {
@@ -11,7 +12,6 @@ declare global {
   }
 }
 
-// Definimos el tipo del producto del carrito localmente
 interface ProductoCarrito {
   id: string;
   nombre: string;
@@ -20,7 +20,7 @@ interface ProductoCarrito {
   stock: number;
   tipo: "producto" | "servicio";
   cantidad?: number;
-  variante?: string; // para evitar error de propiedad inexistente
+  variante?: string;
 }
 
 export default function FormaDePago() {
@@ -28,6 +28,13 @@ export default function FormaDePago() {
   const navigate = useNavigate();
   const { carrito, vaciarCarrito } = useCarrito();
   const [publicKey, setPublicKey] = useState("");
+  const { esEmpleado } = useAuth();
+
+  useEffect(() => {
+    if (esEmpleado) {
+      navigate("/empleado/forma-pago");
+    }
+  }, [esEmpleado, navigate]);
 
   useEffect(() => {
     const userId = localStorage.getItem("userId");
@@ -56,13 +63,15 @@ export default function FormaDePago() {
   }, [publicKey]);
 
   useEffect(() => {
+    if (esEmpleado) return;
+
     const clienteId = localStorage.getItem("clienteId");
     const datosAnonimos = localStorage.getItem("datosEnvioAnonimo");
     if (!clienteId && !datosAnonimos) {
       Swal.fire("Faltan datos", "Por favor completá tus datos de envío antes de continuar", "warning");
       navigate("/forma-entrega");
     }
-  }, []);
+  }, [esEmpleado]);
 
   const total = carrito.reduce((sum, prod) => sum + prod.precio * (prod.cantidad ?? 1), 0);
 
@@ -95,11 +104,48 @@ export default function FormaDePago() {
     await batch.commit();
   };
 
+  // ✅ NUEVA FUNCION PARA REGISTRAR EN CAJA
+  const registrarVentaEnCaja = async () => {
+    const tiendaId = localStorage.getItem("userId");
+    if (!tiendaId) return;
+
+    const cajasRef = doc(db, "tiendas", tiendaId, "cajas", "actual");
+    const cajaSnap = await getDoc(cajasRef);
+
+    if (!cajaSnap.exists()) return;
+
+    const caja = cajaSnap.data();
+    if (caja.cerrada) return;
+
+    const nuevaVenta = {
+      id: Date.now().toString(),
+      productos: carrito,
+      monto: total,
+      metodo: formaPago,
+      hora: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    };
+
+    const ventasActuales = caja.ventas || [];
+    const nuevasVentas = [...ventasActuales, nuevaVenta];
+
+    const nuevosTotales = {
+      totalEfectivo: formaPago === "efectivo" ? (caja.totalEfectivo || 0) + total : caja.totalEfectivo || 0,
+      totalMp: formaPago === "mercadopago" ? (caja.totalMp || 0) + total : caja.totalMp || 0,
+      totalTransferencia: formaPago === "transferencia" ? (caja.totalTransferencia || 0) + total : caja.totalTransferencia || 0,
+    };
+
+    await updateDoc(cajasRef, {
+      ventas: nuevasVentas,
+      ...nuevosTotales,
+    });
+  };
+
   const finalizar = async () => {
     if (!formaPago) return alert("Selecciona una forma de pago");
 
     if (formaPago === "transferencia") {
       await descontarStock();
+      await registrarVentaEnCaja(); // ✅ Registro para empleados
       Swal.fire("Gracias", "Te enviaremos los datos bancarios por WhatsApp", "info");
       vaciarCarrito();
       localStorage.removeItem("datosEnvioAnonimo");
@@ -137,6 +183,7 @@ export default function FormaDePago() {
         if (!data.preferenceId) throw new Error("No se obtuvo preferenceId");
 
         await descontarStock();
+        await registrarVentaEnCaja(); // ✅ Registro para empleados
         vaciarCarrito();
         localStorage.removeItem("datosEnvioAnonimo");
 

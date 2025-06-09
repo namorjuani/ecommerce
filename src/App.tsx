@@ -18,7 +18,7 @@ import AgendarServicio from "./pages/AgendarServicio";
 import CheckoutReserva from "./pages/CheckoutReserva";
 import ResultadoBusqueda from "./pages/ResultadoBusqueda";
 import { TiendaProvider } from "./context/TiendaContext";
-
+import FormaDePagoEmpleado from "./Components/empleados/FormaDePagoEmpleado";
 
 export default function App() {
   return (
@@ -40,6 +40,7 @@ export default function App() {
                   <Route path="/agendar-servicio/:id" element={<AgendarServicio />} />
                   <Route path="/checkout-reserva" element={<CheckoutReserva />} />
                   <Route path="/buscar/:termino" element={<ResultadoBusqueda />} />
+                  <Route path="/empleado/forma-pago" element={<FormaDePagoEmpleado />} />
                   <Route
                     path="/admin"
                     element={

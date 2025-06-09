@@ -3,26 +3,24 @@ import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { useCliente } from "../context/ClienteContext";
 import { useCarrito } from "../context/CarritoContext";
+import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-
 
 export default function FormaEntrega() {
   const [envio, setEnvio] = useState("");
   const [clienteInfo, setClienteInfo] = useState<any>(null);
   const { cliente } = useCliente();
-  const {
-    carrito,
-    eliminarDelCarrito,
-    vaciarCarrito,
-    calcularTotal,
-    actualizarCantidad,
-  } = useCarrito();
+  const { carrito, eliminarDelCarrito, vaciarCarrito, calcularTotal, actualizarCantidad } = useCarrito();
+  const { esEmpleado } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const tiendaId = localStorage.getItem("userId");
+    if (esEmpleado) setEnvio("retiro");
+  }, [esEmpleado]);
 
+  useEffect(() => {
+    const tiendaId = localStorage.getItem("userId");
     if (cliente && tiendaId) {
       const fetchData = async () => {
         const ref = doc(db, "tiendas", tiendaId, "clientes", cliente.uid);
@@ -35,68 +33,63 @@ export default function FormaEntrega() {
       };
       fetchData();
     } else {
-      // Si no está logueado, intento cargar de localStorage
       const temp = localStorage.getItem("datosEnvioTemp");
-      if (temp) {
-        setClienteInfo(JSON.parse(temp));
-      }
+      if (temp) setClienteInfo(JSON.parse(temp));
     }
   }, [cliente]);
 
   const total = calcularTotal();
 
   const continuar = async () => {
-  if (!envio) {
-    alert("Selecciona una forma de entrega");
-    return;
-  }
-
-  const tiendaId = localStorage.getItem("userId");
-
-  if (envio === "domicilio") {
-    if (!clienteInfo?.direccion) {
-      const formValues = await Swal.fire({
-        title: "Completá tus datos de envío",
-        html: `
-          <input id="swal-nombre" class="swal2-input" placeholder="Nombre completo">
-          <input id="swal-dni" class="swal2-input" placeholder="DNI">
-          <input id="swal-direccion" class="swal2-input" placeholder="Dirección">
-          <input id="swal-telefono" class="swal2-input" placeholder="Teléfono">
-          <input id="swal-email" class="swal2-input" placeholder="Email">
-        `,
-        focusConfirm: false,
-        preConfirm: () => ({
-          nombre: (document.getElementById("swal-nombre") as HTMLInputElement).value,
-          dni: (document.getElementById("swal-dni") as HTMLInputElement).value,
-          direccion: (document.getElementById("swal-direccion") as HTMLInputElement).value,
-          telefono: (document.getElementById("swal-telefono") as HTMLInputElement).value,
-          email: (document.getElementById("swal-email") as HTMLInputElement).value,
-        }),
-      });
-
-      if (!formValues.value || !formValues.value.nombre) {
-        Swal.fire("Error", "Debes completar todos los campos", "error");
-        return;
-      }
-
-      const datos = formValues.value;
-
-      if (cliente && tiendaId) {
-        const ref = doc(db, "tiendas", tiendaId, "clientes", cliente.uid);
-        await setDoc(ref, datos);
-        localStorage.setItem("cliente", JSON.stringify(datos));
-        localStorage.setItem("clienteId", cliente.uid);
-      } else {
-        localStorage.setItem("datosEnvioAnonimo", JSON.stringify(datos));
-      }
-
-      setClienteInfo(datos);
+    const tiendaId = localStorage.getItem("userId");
+    if (esEmpleado) {
+      localStorage.setItem("formaEntrega", "retiro");
+      navigate("/forma-pago");
+      return;
     }
-  }
 
-  localStorage.setItem("formaEntrega", envio);
-  navigate("/forma-pago");
-};
+    if (!envio) {
+      alert("Selecciona una forma de entrega");
+      return;
+    }
+
+    if (envio === "domicilio") {
+      if (!clienteInfo?.direccion) {
+        const formValues = await Swal.fire({
+          title: "Completá tus datos de envío",
+          html: `...`, // el mismo HTML que tenías
+          focusConfirm: false,
+          preConfirm: () => ({
+            nombre: (document.getElementById("swal-nombre") as HTMLInputElement).value,
+            dni: (document.getElementById("swal-dni") as HTMLInputElement).value,
+            direccion: (document.getElementById("swal-direccion") as HTMLInputElement).value,
+            telefono: (document.getElementById("swal-telefono") as HTMLInputElement).value,
+            email: (document.getElementById("swal-email") as HTMLInputElement).value,
+          }),
+        });
+
+        if (!formValues.value || !formValues.value.nombre) {
+          Swal.fire("Error", "Debes completar todos los campos", "error");
+          return;
+        }
+
+        const datos = formValues.value;
+        if (cliente && tiendaId) {
+          const ref = doc(db, "tiendas", tiendaId, "clientes", cliente.uid);
+          await setDoc(ref, datos);
+          localStorage.setItem("cliente", JSON.stringify(datos));
+          localStorage.setItem("clienteId", cliente.uid);
+        } else {
+          localStorage.setItem("datosEnvioAnonimo", JSON.stringify(datos));
+        }
+
+        setClienteInfo(datos);
+      }
+    }
+
+    localStorage.setItem("formaEntrega", envio);
+    navigate("/forma-pago");
+  };
 
 
   return (
