@@ -91,10 +91,18 @@ export default function FormaDePagoEmpleado() {
       const cajaRef = doc(db, "tiendas", tiendaId, "cajas", cajaDoc.id);
 
       await addDoc(collection(cajaRef, "ventas"), {
-        total: total,
-        formaPago,
-        creado: Timestamp.now(),
-      });
+  total: total,
+  formaPago,
+  creado: Timestamp.now(),
+  productos: carrito.map((p) => ({
+    id: p.id || "",
+    nombre: p.nombre || "Sin nombre",
+    cantidad: p.cantidad || 1,
+    precio: p.precio || 0,
+    imagen: p.imagen || "",
+    variante: p.variante || null,
+  })),
+});
 
       const cajaData = cajaDoc.data();
       const actual = cajaData.ventasTotales || 0;

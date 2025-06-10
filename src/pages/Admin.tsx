@@ -5,7 +5,6 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
-import HistorialCajas from "../Components/HistorialCajas";
 import { db } from "../firebase";
 import {
   collection,
@@ -21,6 +20,7 @@ import Swal from "sweetalert2";
 import VistaPreviaTienda from "../Components/VistaPreviaTienda";
 import UbicacionTienda from "../Components/UbicacionTienda";
 import EsteticaCategorias from "../Components/EsteticaCategorias";
+import ResumenCajasAdmin from "../Components/empleados/ResumenCajasAdmin";
 
 
 
@@ -1041,7 +1041,7 @@ export default function Admin() {
 
         </>
       )}
-      {seccionActiva === "cajas" && <HistorialCajas />}
+      {seccionActiva === "cajas" && <ResumenCajasAdmin/>}
 
     </div>
   );
