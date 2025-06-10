@@ -1,9 +1,22 @@
+// mismo import que ya tenías
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { useCarrito } from "../context/CarritoContext";
 import { db } from "../firebase";
-import { doc, getDoc, writeBatch, updateDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  writeBatch,
+  updateDoc,
+  collection,
+  getDocs,
+  query,
+  where,
+  addDoc,
+  Timestamp
+} from "firebase/firestore";
+
 import { useAuth } from "../context/AuthContext";
 
 declare global {
@@ -28,7 +41,7 @@ export default function FormaDePago() {
   const navigate = useNavigate();
   const { carrito, vaciarCarrito } = useCarrito();
   const [publicKey, setPublicKey] = useState("");
-  const { esEmpleado } = useAuth();
+  const { esEmpleado, usuario } = useAuth();
 
   useEffect(() => {
     if (esEmpleado) {
@@ -104,40 +117,49 @@ export default function FormaDePago() {
     await batch.commit();
   };
 
-  // ✅ NUEVA FUNCION PARA REGISTRAR EN CAJA
   const registrarVentaEnCaja = async () => {
     const tiendaId = localStorage.getItem("userId");
-    if (!tiendaId) return;
+    if (!tiendaId) {
+      console.log("⛔ No hay tiendaId");
+      return;
+    }
 
-    const cajasRef = doc(db, "tiendas", tiendaId, "cajas", "actual");
-    const cajaSnap = await getDoc(cajasRef);
+    const empleado = usuario?.email || "Empleado";
+    const inicioDia = new Date();
+    inicioDia.setHours(0, 0, 0, 0);
+    const finDia = new Date();
+    finDia.setHours(23, 59, 59, 999);
 
-    if (!cajaSnap.exists()) return;
+    try {
+      const cajasSnap = await getDocs(query(
+        collection(db, "tiendas", tiendaId, "cajas"),
+        where("empleado", "==", empleado),
+        where("fecha", ">=", inicioDia),
+        where("fecha", "<=", finDia),
+        where("cerrada", "==", false)
+      ));
 
-    const caja = cajaSnap.data();
-    if (caja.cerrada) return;
+      if (cajasSnap.empty) {
+        console.log("⚠️ No hay caja abierta encontrada entre", inicioDia, "y", finDia);
+        return;
+      }
 
-    const nuevaVenta = {
-      id: Date.now().toString(),
-      productos: carrito,
-      monto: total,
-      metodo: formaPago,
-      hora: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    };
+      const cajaDoc = cajasSnap.docs[0];
+      const cajaId = cajaDoc.id;
+      const cajaRef = doc(db, "tiendas", tiendaId, "cajas", cajaId);
 
-    const ventasActuales = caja.ventas || [];
-    const nuevasVentas = [...ventasActuales, nuevaVenta];
+      const nuevaVenta = {
+        total,
+        formaPago,
+        creado: Timestamp.now(),
+        productos: carrito,
+      };
 
-    const nuevosTotales = {
-      totalEfectivo: formaPago === "efectivo" ? (caja.totalEfectivo || 0) + total : caja.totalEfectivo || 0,
-      totalMp: formaPago === "mercadopago" ? (caja.totalMp || 0) + total : caja.totalMp || 0,
-      totalTransferencia: formaPago === "transferencia" ? (caja.totalTransferencia || 0) + total : caja.totalTransferencia || 0,
-    };
-
-    await updateDoc(cajasRef, {
-      ventas: nuevasVentas,
-      ...nuevosTotales,
-    });
+      await addDoc(collection(db, "tiendas", tiendaId, "cajas", cajaId, "ventas"), nuevaVenta);
+      console.log("✅ Venta registrada en caja:", nuevaVenta);
+    } catch (error) {
+      console.error("⛔ Error al registrar venta en caja:", error);
+    }
   };
 
   const finalizar = async () => {
@@ -145,7 +167,7 @@ export default function FormaDePago() {
 
     if (formaPago === "transferencia") {
       await descontarStock();
-      await registrarVentaEnCaja(); // ✅ Registro para empleados
+      await registrarVentaEnCaja();
       Swal.fire("Gracias", "Te enviaremos los datos bancarios por WhatsApp", "info");
       vaciarCarrito();
       localStorage.removeItem("datosEnvioAnonimo");
@@ -183,7 +205,7 @@ export default function FormaDePago() {
         if (!data.preferenceId) throw new Error("No se obtuvo preferenceId");
 
         await descontarStock();
-        await registrarVentaEnCaja(); // ✅ Registro para empleados
+        await registrarVentaEnCaja();
         vaciarCarrito();
         localStorage.removeItem("datosEnvioAnonimo");
 
@@ -248,7 +270,7 @@ export default function FormaDePago() {
           {carrito.map((prod, i) => (
             <div key={i} style={{ display: "flex", marginBottom: "0.5rem" }}>
               <img
-                src={prod.imagen}
+                src={prod.imagen || "https://via.placeholder.com/40"}
                 alt={prod.nombre}
                 style={{
                   width: "40px",

@@ -99,7 +99,8 @@ export default function CajaModalEmpleado({ visible, onClose }: { visible: boole
       totalEfectivo: efectivo,
       totalMP: mp,
       totalTransferencia: transferencia,
-      totalGeneral
+      totalGeneral,
+      ventasTotales: ventas.length // ✅ opcional, útil para estadísticas
     });
 
     await Swal.fire("Caja cerrada", "La caja se cerró exitosamente", "success");

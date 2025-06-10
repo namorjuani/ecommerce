@@ -75,15 +75,14 @@ export default function FormaDePagoEmpleado() {
       creado: Timestamp.now(),
     };
 
-    // 🔄 Agregar a colección general de ventas
     await addDoc(collection(db, "tiendas", tiendaId, "ventas"), ventaLimpia);
 
-    // 🔄 Agregar dentro de la caja actual del empleado
     const fechaHoy = new Date().toISOString().split("T")[0];
     const q = query(
       collection(db, "tiendas", tiendaId, "cajas"),
       where("fecha", "==", fechaHoy),
-      where("empleado", "==", empleado)
+      where("empleado", "==", empleado),
+      where("cerrada", "==", false)
     );
     const snap = await getDocs(q);
 
@@ -91,16 +90,27 @@ export default function FormaDePagoEmpleado() {
       const cajaDoc = snap.docs[0];
       const cajaRef = doc(db, "tiendas", tiendaId, "cajas", cajaDoc.id);
 
-      // Guardamos la venta dentro de la subcolección 'ventas' de la caja
       await addDoc(collection(cajaRef, "ventas"), {
         total: total,
         formaPago,
         creado: Timestamp.now(),
       });
 
-      // Actualizamos el total de la caja (opcional)
-      const actual = cajaDoc.data().ventasTotales || 0;
-      await updateDoc(cajaRef, { ventasTotales: actual + total });
+      const cajaData = cajaDoc.data();
+      const actual = cajaData.ventasTotales || 0;
+      const totalMp = cajaData.totalMp || 0;
+      const totalEf = cajaData.totalEfectivo || 0;
+      const totalTr = cajaData.totalTransferencia || 0;
+
+      const nuevosTotales: any = {
+        ventasTotales: actual + total,
+      };
+
+      if (formaPago === "mercadopago") nuevosTotales.totalMp = totalMp + total;
+      if (formaPago === "efectivo") nuevosTotales.totalEfectivo = totalEf + total;
+      if (formaPago === "transferencia") nuevosTotales.totalTransferencia = totalTr + total;
+
+      await updateDoc(cajaRef, nuevosTotales);
     }
 
     await batch.commit();
@@ -127,8 +137,7 @@ export default function FormaDePagoEmpleado() {
           value="efectivo"
           checked={formaPago === "efectivo"}
           onChange={() => setFormaPago("efectivo")}
-        />{" "}
-        Efectivo
+        /> Efectivo
       </label>
 
       {formaPago === "efectivo" && (
@@ -155,16 +164,13 @@ export default function FormaDePagoEmpleado() {
           value="mercadopago"
           checked={formaPago === "mercadopago"}
           onChange={() => setFormaPago("mercadopago")}
-        />{" "}
-        Mercado Pago
+        /> Mercado Pago
       </label>
 
       {formaPago === "mercadopago" && (
         <div style={{ background: "#f1f1f1", padding: "1rem", borderRadius: "6px" }}>
           <p>Alias o QR para cobrar (configurado por el admin):</p>
-          <p>
-            <strong>alias.mp/tu_tienda</strong>
-          </p>
+          <p><strong>alias.mp/tu_tienda</strong></p>
         </div>
       )}
 
@@ -175,16 +181,13 @@ export default function FormaDePagoEmpleado() {
           value="transferencia"
           checked={formaPago === "transferencia"}
           onChange={() => setFormaPago("transferencia")}
-        />{" "}
-        Transferencia bancaria
+        /> Transferencia bancaria
       </label>
 
       {formaPago === "transferencia" && (
         <div style={{ background: "#f1f1f1", padding: "1rem", borderRadius: "6px" }}>
           <p>CBU o alias configurado por el admin:</p>
-          <p>
-            <strong>CBU: 0000003100000001234567</strong>
-          </p>
+          <p><strong>CBU: 0000003100000001234567</strong></p>
         </div>
       )}
 
