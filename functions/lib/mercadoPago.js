@@ -36,18 +36,24 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.crearPreferencia = void 0;
-// functions/src/mercadoPago.ts
+exports.crearPreferenciaFunction = void 0;
 const cors_1 = __importDefault(require("cors"));
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const axios_1 = __importDefault(require("axios"));
-const corsHandler = (0, cors_1.default)({ origin: true });
 if (!admin.apps.length) {
     admin.initializeApp();
 }
-exports.crearPreferencia = functions.https.onRequest((req, res) => {
+const corsHandler = (0, cors_1.default)({ origin: true });
+exports.crearPreferenciaFunction = functions.https.onRequest((req, res) => {
     corsHandler(req, res, async () => {
+        if (req.method === "OPTIONS") {
+            res.set("Access-Control-Allow-Origin", "*");
+            res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+            res.set("Access-Control-Allow-Headers", "Content-Type");
+            res.status(204).send("");
+            return;
+        }
         const { productos, tiendaId } = req.body;
         if (!productos || !tiendaId) {
             res.status(400).json({ error: "Faltan datos requeridos." });
@@ -85,14 +91,15 @@ exports.crearPreferencia = functions.https.onRequest((req, res) => {
                     Authorization: `Bearer ${mercadoPagoToken}`,
                 },
             });
+            res.set("Access-Control-Allow-Origin", "*");
             res.json({
                 preferenceId: response.data.id,
-                init_point: response.data.init_point, // ✅ para redirigir directo
+                init_point: response.data.init_point,
             });
         }
         catch (error) {
-            console.error("Error al crear preferencia:", error);
-            res.status(500).send("Error al crear preferencia");
+            console.error("❌ Error:", error.response?.data || error.message);
+            res.status(500).json({ error: error.message });
         }
     });
 });

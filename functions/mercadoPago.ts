@@ -1,17 +1,24 @@
-// functions/src/mercadoPago.ts
 import cors from "cors";
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import axios from "axios";
 
-const corsHandler = cors({ origin: true });
-
 if (!admin.apps.length) {
   admin.initializeApp();
 }
 
-export const crearPreferencia = functions.https.onRequest((req, res) => {
+const corsHandler = cors({ origin: true });
+
+export const crearPreferenciaFunction = functions.https.onRequest((req, res) => {
   corsHandler(req, res, async () => {
+    if (req.method === "OPTIONS") {
+      res.set("Access-Control-Allow-Origin", "*");
+      res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+      res.set("Access-Control-Allow-Headers", "Content-Type");
+      res.status(204).send("");
+      return;
+    }
+
     const { productos, tiendaId } = req.body;
 
     if (!productos || !tiendaId) {
@@ -61,13 +68,14 @@ export const crearPreferencia = functions.https.onRequest((req, res) => {
         }
       );
 
+      res.set("Access-Control-Allow-Origin", "*");
       res.json({
         preferenceId: response.data.id,
-        init_point: response.data.init_point, // ✅ para redirigir directo
+        init_point: response.data.init_point,
       });
-    } catch (error) {
-      console.error("Error al crear preferencia:", error);
-      res.status(500).send("Error al crear preferencia");
+    } catch (error: any) {
+      console.error("❌ Error:", error.response?.data || error.message);
+      res.status(500).json({ error: error.message });
     }
   });
 });

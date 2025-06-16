@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCarrito } from "../../context/CarritoContext";
 import { useAuth } from "../../context/AuthContext";
@@ -20,6 +20,10 @@ import Swal from "sweetalert2";
 export default function FormaDePagoEmpleado() {
   const [formaPago, setFormaPago] = useState("");
   const [montoRecibido, setMontoRecibido] = useState("");
+  const [aliasMp, setAliasMp] = useState("");
+  const [cbu, setCbu] = useState("");
+  const [aliasBancario, setAliasBancario] = useState("");
+
   const navigate = useNavigate();
   const { carrito, vaciarCarrito, calcularTotal } = useCarrito();
   const { usuario } = useAuth();
@@ -28,6 +32,22 @@ export default function FormaDePagoEmpleado() {
   const vuelto = parseFloat(montoRecibido || "0") - total;
   const tiendaId = localStorage.getItem("userId") || "";
   const empleado = usuario?.displayName || "Empleado";
+
+  useEffect(() => {
+    const fetchDatosPago = async () => {
+      if (!tiendaId) return;
+      const docRef = doc(db, "tiendas", tiendaId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setAliasMp(data.aliasMp || "");
+        setCbu(data.cbu || "");
+        setAliasBancario(data.aliasBancario || "");
+      }
+    };
+
+    fetchDatosPago();
+  }, [tiendaId]);
 
   const finalizarVenta = async () => {
     if (!formaPago) {
@@ -70,7 +90,7 @@ export default function FormaDePagoEmpleado() {
       formaPago,
       vuelto: formaPago === "efectivo" ? vuelto : null,
       montoRecibido: formaPago === "efectivo" ? parseFloat(montoRecibido) : null,
-      empleado: empleado || "Empleado sin nombre",
+      empleado,
       fecha: new Date().toISOString(),
       creado: Timestamp.now(),
     };
@@ -91,18 +111,18 @@ export default function FormaDePagoEmpleado() {
       const cajaRef = doc(db, "tiendas", tiendaId, "cajas", cajaDoc.id);
 
       await addDoc(collection(cajaRef, "ventas"), {
-  total: total,
-  formaPago,
-  creado: Timestamp.now(),
-  productos: carrito.map((p) => ({
-    id: p.id || "",
-    nombre: p.nombre || "Sin nombre",
-    cantidad: p.cantidad || 1,
-    precio: p.precio || 0,
-    imagen: p.imagen || "",
-    variante: p.variante || null,
-  })),
-});
+        total,
+        formaPago,
+        creado: Timestamp.now(),
+        productos: carrito.map((p) => ({
+          id: p.id || "",
+          nombre: p.nombre || "Sin nombre",
+          cantidad: p.cantidad || 1,
+          precio: p.precio || 0,
+          imagen: p.imagen || "",
+          variante: p.variante || null,
+        })),
+      });
 
       const cajaData = cajaDoc.data();
       const actual = cajaData.ventasTotales || 0;
@@ -138,6 +158,7 @@ export default function FormaDePagoEmpleado() {
     <div style={{ maxWidth: "600px", margin: "2rem auto", padding: "1rem" }}>
       <h2>💳 Forma de pago</h2>
 
+      {/* EFECTIVO */}
       <label style={{ display: "block", margin: "1rem 0" }}>
         <input
           type="radio"
@@ -145,7 +166,8 @@ export default function FormaDePagoEmpleado() {
           value="efectivo"
           checked={formaPago === "efectivo"}
           onChange={() => setFormaPago("efectivo")}
-        /> Efectivo
+        />{" "}
+        Efectivo
       </label>
 
       {formaPago === "efectivo" && (
@@ -165,6 +187,7 @@ export default function FormaDePagoEmpleado() {
         </div>
       )}
 
+      {/* MERCADO PAGO */}
       <label style={{ display: "block", margin: "1rem 0" }}>
         <input
           type="radio"
@@ -172,16 +195,20 @@ export default function FormaDePagoEmpleado() {
           value="mercadopago"
           checked={formaPago === "mercadopago"}
           onChange={() => setFormaPago("mercadopago")}
-        /> Mercado Pago
+        />{" "}
+        Mercado Pago
       </label>
 
       {formaPago === "mercadopago" && (
         <div style={{ background: "#f1f1f1", padding: "1rem", borderRadius: "6px" }}>
-          <p>Alias o QR para cobrar (configurado por el admin):</p>
-          <p><strong>alias.mp/tu_tienda</strong></p>
+          <p>Alias o QR para cobrar:</p>
+          <p>
+            <strong>{aliasMp || "Alias no configurado"}</strong>
+          </p>
         </div>
       )}
 
+      {/* TRANSFERENCIA */}
       <label style={{ display: "block", margin: "1rem 0" }}>
         <input
           type="radio"
@@ -189,16 +216,18 @@ export default function FormaDePagoEmpleado() {
           value="transferencia"
           checked={formaPago === "transferencia"}
           onChange={() => setFormaPago("transferencia")}
-        /> Transferencia bancaria
+        />{" "}
+        Transferencia bancaria
       </label>
 
       {formaPago === "transferencia" && (
         <div style={{ background: "#f1f1f1", padding: "1rem", borderRadius: "6px" }}>
-          <p>CBU o alias configurado por el admin:</p>
-          <p><strong>CBU: 0000003100000001234567</strong></p>
+          <p>CBU: <strong>{cbu || "CBU no configurado"}</strong></p>
+          <p>Alias: <strong>{aliasBancario || "Alias no configurado"}</strong></p>
         </div>
       )}
 
+      {/* CONFIRMAR */}
       <button
         onClick={finalizarVenta}
         style={{
@@ -214,6 +243,7 @@ export default function FormaDePagoEmpleado() {
         ✅ Confirmar venta
       </button>
 
+      {/* RESUMEN */}
       <div
         style={{
           marginTop: "2rem",
@@ -225,7 +255,10 @@ export default function FormaDePagoEmpleado() {
       >
         <h3>🧾 Resumen de tu compra</h3>
         {carrito.map((prod, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", marginBottom: "0.5rem" }}>
+          <div
+            key={i}
+            style={{ display: "flex", alignItems: "center", marginBottom: "0.5rem" }}
+          >
             <img
               src={prod.imagen}
               alt={prod.nombre}

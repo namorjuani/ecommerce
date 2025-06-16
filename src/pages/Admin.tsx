@@ -103,7 +103,6 @@ export default function Admin() {
   const [recibirPorCorreo, setRecibirPorCorreo] = useState(false);
   const [recibirPorWhatsapp, setRecibirPorWhatsapp] = useState(false);
   const [mercadoPagoToken, setMercadoPagoToken] = useState("");
-  const [publicKeyMP, setPublicKeyMP] = useState("");
   const [reservas, setReservas] = useState<any[]>([]);
   const [aceptarReservasAuto, setAceptarReservasAuto] = useState(false);
   const [whatsappReservas, setWhatsappReservas] = useState("");
@@ -118,6 +117,11 @@ export default function Admin() {
 
   const [linkInstagram, setLinkInstagram] = useState("");
   const [linkFacebook, setLinkFacebook] = useState("");
+
+const [mercadoPagoPublicKey, setMercadoPagoPublicKey] = useState("");
+const [aliasMp, setAliasMp] = useState("");
+const [cbu, setCbu] = useState("");
+const [aliasBancario, setAliasBancario] = useState("");
 
 
   const cellStyle = {
@@ -143,67 +147,60 @@ export default function Admin() {
     );
   };
 
+  const tiendaId = localStorage.getItem("userId") || "";
+
   useEffect(() => {
     if (rol && rol !== "admin") {
       navigate("/"); // redirige si no es admin
     }
   }, [rol, navigate]);
 
-  useEffect(() => {
-    if (!usuario) return;
+ useEffect(() => {
+  if (!usuario) return;
 
-    const cargarDatos = async () => {
-      const configRef = doc(db, "tiendas", usuario.uid);
-      const configSnap = await getDoc(configRef);
-      if (configSnap.exists()) {
-        const data = configSnap.data();
+  const cargarDatos = async () => {
+    const configRef = doc(db, "tiendas", usuario.uid);
+    const configSnap = await getDoc(configRef);
+    if (configSnap.exists()) {
+      const data = configSnap.data();
 
-        // Ya existentes
-        setWhatsappReservas(data.whatsappReservas || "");
-        setAceptarReservasAuto(data.aceptarReservasAuto || false);
-        setNombre(data.nombre || "");
-        setDescripcion(data.descripcion || "");
-        setImagen(data.imagen || "");
-        setLogo(data.logo || "");
-        setTextoHero(data.textoHero || "");
-        setColorFondo(data.colorFondo || "#ffffff");
-        setColorBoton(data.colorBoton || "#000000");
-        setWhatsapp(data.whatsapp || "");
-        setCorreoNotificacion(data.correoNotificacion || "");
-        setWhatsappNotificacion(data.whatsappNotificacion || "");
-        setRecibirPorCorreo(data.recibirPorCorreo || false);
-        setRecibirPorWhatsapp(data.recibirPorWhatsapp || false);
-        setMercadoPagoToken(data.mercadoPagoToken || "");
-        setPublicKeyMP(data.publicKeyMP || "");
+      setMercadoPagoToken(data.mercadoPagoToken || "");
+      setMercadoPagoPublicKey(data.mercadoPagoPublicKey || "");
+      setAliasMp(data.aliasMp || "");
+      setCbu(data.cbu || "");
+      setAliasBancario(data.aliasBancario || "");
 
-        setLinkInstagram(data.linkInstagram || "");
-        setLinkFacebook(data.linkFacebook || "");
+      setWhatsappReservas(data.whatsappReservas || "");
+      setAceptarReservasAuto(data.aceptarReservasAuto || false);
+      setNombre(data.nombre || "");
+      setDescripcion(data.descripcion || "");
+      setImagen(data.imagen || "");
+      setLogo(data.logo || "");
+      setTextoHero(data.textoHero || "");
+      setColorFondo(data.colorFondo || "#ffffff");
+      setColorBoton(data.colorBoton || "#000000");
+      setWhatsapp(data.whatsapp || "");
+      setCorreoNotificacion(data.correoNotificacion || "");
+      setWhatsappNotificacion(data.whatsappNotificacion || "");
+      setRecibirPorCorreo(data.recibirPorCorreo || false);
+      setRecibirPorWhatsapp(data.recibirPorWhatsapp || false);
 
-        // NUEVOS CAMPOS DE PERSONALIZACIÓN
-        setGoogleMaps(data.googleMaps || "");
-        setInstagram(data.instagram || "");
-        setFacebook(data.facebook || "");
-        setTiktok(data.tiktok || "");
-        setPosicionBanner(data.posicionBanner || "center");
-        setTamañoBanner(data.tamañoBanner || "cover");
-        setTextoUbicacion(data.textoUbicacion || "");
+      setLinkInstagram(data.linkInstagram || "");
+      setLinkFacebook(data.linkFacebook || "");
+      setGoogleMaps(data.googleMaps || "");
+      setInstagram(data.instagram || "");
+      setFacebook(data.facebook || "");
+      setTiktok(data.tiktok || "");
+      setPosicionBanner(data.posicionBanner || "center");
+      setTamañoBanner(data.tamañoBanner || "cover");
+      setTextoUbicacion(data.textoUbicacion || "");
+    }
+  };
 
-        setColorFondo(data.colorFondo || "#ffffff");
+  cargarDatos();
+}, [usuario]);
 
 
-      }
-
-      const productosRef = collection(db, "tiendas", usuario.uid, "productos");
-      const snapshot = await getDocs(productosRef);
-      const lista = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Producto[];
-      setProductos(lista);
-    };
-
-    cargarDatos();
-  }, [usuario]);
 
 
   const cargarReservas = async () => {
@@ -251,7 +248,12 @@ export default function Admin() {
         textoUbicacion,
         linkInstagram,
         linkFacebook,
-        
+        mercadoPagoToken,
+        mercadoPagoPublicKey,
+        aliasMp,
+        cbu,
+        aliasBancario,
+
       },
       { merge: true }
     );
@@ -369,33 +371,67 @@ export default function Admin() {
 
       {seccionActiva === "pagos" && (
         <>
-          <h3>Configuración de pagos</h3>
+          <h3>⚙️ Configuración de pagos</h3>
 
-          <label>Access Token de Mercado Pago (privado)</label>
+          <label style={{ fontWeight: "bold" }}>🔑 Access Token de Mercado Pago:</label>
           <input
             value={mercadoPagoToken}
             onChange={(e) => setMercadoPagoToken(e.target.value)}
-            placeholder="ACCESS_TOKEN"
+            placeholder="access_token_xxx"
             style={{ width: "100%", marginBottom: "1rem" }}
           />
 
-          <label>Public Key de Mercado Pago (pública)</label>
+          <label style={{ fontWeight: "bold" }}>🔓 Public Key de Mercado Pago:</label>
           <input
-            value={publicKeyMP}
-            onChange={(e) => setPublicKeyMP(e.target.value)}
-            placeholder="PUBLIC_KEY"
+            value={mercadoPagoPublicKey}
+            onChange={(e) => setMercadoPagoPublicKey(e.target.value)}
+            placeholder="public_key_xxx"
             style={{ width: "100%", marginBottom: "1rem" }}
           />
 
-          <button onClick={guardarConfiguracion} style={{ backgroundColor: "#3483fa", color: "white", border: "none", padding: "0.6rem 1.5rem", borderRadius: "6px", cursor: "pointer" }}>
+          <label style={{ fontWeight: "bold" }}>📲 Alias de Mercado Pago (para cobrar):</label>
+          <input
+            value={aliasMp}
+            onChange={(e) => setAliasMp(e.target.value)}
+            placeholder="tu.alias.mercadopago"
+            style={{ width: "100%", marginBottom: "1rem" }}
+          />
+
+          <label style={{ fontWeight: "bold" }}>🏦 CBU para transferencia bancaria:</label>
+          <input
+            value={cbu}
+            onChange={(e) => setCbu(e.target.value)}
+            placeholder="0000003100000001234567"
+            style={{ width: "100%", marginBottom: "1rem" }}
+          />
+
+          <label style={{ fontWeight: "bold" }}>🏦 Alias bancario:</label>
+          <input
+            value={aliasBancario}
+            onChange={(e) => setAliasBancario(e.target.value)}
+            placeholder="mi.alias.banco"
+            style={{ width: "100%", marginBottom: "1rem" }}
+          />
+
+          <button
+            onClick={guardarConfiguracion}
+            style={{
+              marginTop: "1rem",
+              backgroundColor: "#4caf50",
+              color: "white",
+              padding: "0.7rem 1.2rem",
+              border: "none",
+              borderRadius: "5px",
+              cursor: "pointer",
+            }}
+          >
             💾 Guardar configuración
           </button>
 
-
           <p style={{ marginTop: "1rem", fontSize: "0.9rem", color: "#555" }}>
-            Podés obtener tus claves desde:{" "}
+            Podés obtener tus credenciales desde{" "}
             <a
-              href="https://www.mercadopago.com.ar/developers/panel/app/3047697102060940/credentials/sandbox"
+              href="https://www.mercadopago.com.ar/developers/panel"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -404,6 +440,7 @@ export default function Admin() {
           </p>
         </>
       )}
+
 
       {seccionActiva === "empleados" && (
         <>
@@ -838,34 +875,13 @@ export default function Admin() {
             posicionBanner={posicionBanner}
             tamañoBanner={tamañoBanner}
           />
-          
+
         </>
       )}
 
 
 
-      {seccionActiva === "pagos" && (
-        <>
-          <h3>Configuración de pagos</h3>
-          <p>Ingresá tu token de acceso de Mercado Pago (Access Token):</p>
-          <input
-            value={mercadoPagoToken}
-            onChange={(e) => setMercadoPagoToken(e.target.value)}
-            style={{ width: "100%", marginBottom: "1rem" }}
-          />
-          <button onClick={guardarConfiguracion}>💾 Guardar token</button>
-          <p style={{ marginTop: "1rem", fontSize: "0.9rem", color: "#555" }}>
-            Podés obtener tu access token desde:{" "}
-            <a
-              href="https://www.mercadopago.com.ar/developers/panel/app/3047697102060940/credentials/sandbox"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Mercado Pago Developers
-            </a>
-          </p>
-        </>
-      )}
+ {/* 🔔 Sección: Notificaciones */}
 
       {/* 🔔 Sección: Notificaciones */}
       {seccionActiva === "notificaciones" && (
@@ -890,7 +906,28 @@ export default function Admin() {
         </>
       )}
 
-      {/* ❓ Sección: Ayuda */}
+      {/*      {seccionActiva === "pagos" && (
+        <>
+          <h3>Configuración de pagos</h3>
+          <p>Ingresá tu token de acceso de Mercado Pago (Access Token):</p>
+          <input
+            value={mercadoPagoToken}
+            onChange={(e) => setMercadoPagoToken(e.target.value)}
+            style={{ width: "100%", marginBottom: "1rem" }}
+          />
+          <button onClick={guardarConfiguracion}>💾 Guardar token</button>
+          <p style={{ marginTop: "1rem", fontSize: "0.9rem", color: "#555" }}>
+            Podés obtener tu access token desde:{" "}
+            <a
+              href="https://www.mercadopago.com.ar/developers/panel/app/3047697102060940/credentials/sandbox"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Mercado Pago Developers
+            </a>
+          </p>
+        </>
+      )} */}
       {seccionActiva === "ayuda" && (
         <>
           <h3>Ayuda para el administrador</h3>
@@ -1041,7 +1078,7 @@ export default function Admin() {
 
         </>
       )}
-      {seccionActiva === "cajas" && <ResumenCajasAdmin/>}
+      {seccionActiva === "cajas" && <ResumenCajasAdmin />}
 
     </div>
   );

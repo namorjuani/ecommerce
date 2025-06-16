@@ -1,3 +1,3 @@
-import { crearPreferencia } from "./mercadoPago";
+import { crearPreferenciaFunction } from "./mercadoPago";
 
-export const crearPreferenciaFunction = crearPreferencia;
+export { crearPreferenciaFunction };

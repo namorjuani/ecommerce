@@ -54,26 +54,44 @@ export default function FormaEntrega() {
     }
 
     if (envio === "domicilio") {
-      if (!clienteInfo?.direccion) {
+          if (!clienteInfo?.direccion) {
         const formValues = await Swal.fire({
           title: "Completá tus datos de envío",
-          html: `...`, // el mismo HTML que tenías
+          html: `
+            <input id="swal-nombre" class="swal2-input" placeholder="Nombre completo" />
+            <input id="swal-dni" class="swal2-input" placeholder="DNI" />
+            <input id="swal-direccion" class="swal2-input" placeholder="Dirección de envío" />
+            <input id="swal-telefono" class="swal2-input" placeholder="Teléfono" />
+            <input id="swal-email" class="swal2-input" placeholder="Correo electrónico" />
+          `,
           focusConfirm: false,
+          confirmButtonText: "Guardar datos",
           preConfirm: () => ({
-            nombre: (document.getElementById("swal-nombre") as HTMLInputElement).value,
-            dni: (document.getElementById("swal-dni") as HTMLInputElement).value,
-            direccion: (document.getElementById("swal-direccion") as HTMLInputElement).value,
-            telefono: (document.getElementById("swal-telefono") as HTMLInputElement).value,
-            email: (document.getElementById("swal-email") as HTMLInputElement).value,
+            nombre: (document.getElementById("swal-nombre") as HTMLInputElement)?.value,
+            dni: (document.getElementById("swal-dni") as HTMLInputElement)?.value,
+            direccion: (document.getElementById("swal-direccion") as HTMLInputElement)?.value,
+            telefono: (document.getElementById("swal-telefono") as HTMLInputElement)?.value,
+            email: (document.getElementById("swal-email") as HTMLInputElement)?.value,
           }),
         });
 
-        if (!formValues.value || !formValues.value.nombre) {
+        if (!formValues.value) {
           Swal.fire("Error", "Debes completar todos los campos", "error");
           return;
         }
 
         const datos = formValues.value;
+        if (
+          !datos.nombre ||
+          !datos.dni ||
+          !datos.direccion ||
+          !datos.telefono ||
+          !datos.email
+        ) {
+          Swal.fire("Error", "Debes completar todos los campos", "error");
+          return;
+        }
+
         if (cliente && tiendaId) {
           const ref = doc(db, "tiendas", tiendaId, "clientes", cliente.uid);
           await setDoc(ref, datos);
@@ -83,8 +101,7 @@ export default function FormaEntrega() {
           localStorage.setItem("datosEnvioAnonimo", JSON.stringify(datos));
         }
 
-        setClienteInfo(datos);
-      }
+        setClienteInfo(datos);}
     }
 
     localStorage.setItem("formaEntrega", envio);
