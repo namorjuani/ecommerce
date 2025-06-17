@@ -232,7 +232,7 @@ export default function FormaEntrega() {
               <button
                 onClick={vaciarCarrito}
                 style={{
-                  backgroundColor: "#666",
+                  backgroundColor: "red",
                   color: "white",
                   border: "none",
                   padding: "0.5rem 1rem",
@@ -246,7 +246,7 @@ export default function FormaEntrega() {
                 onClick={() => navigate("/")}
                 style={{
                   marginLeft: "1rem",
-                  backgroundColor: "#3483fa",
+                  backgroundColor: "green",
                   color: "white",
                   border: "none",
                   padding: "0.5rem 1rem",

@@ -191,6 +191,8 @@ export default function Header({
   </button>
 )}
 
+
+
                     {/* Perfil */}
                     {cliente ? (
                         <div style={{ position: "relative" }}>

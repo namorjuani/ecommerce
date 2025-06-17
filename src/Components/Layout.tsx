@@ -38,11 +38,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                 Cerrar sesión
               </button>
             </>
-          ) : (
-            <button className="login-btn" onClick={() => navigate("/login")}>
-              Ingresar
-            </button>
-          )}
+          ) : null}
         </div>
       </header>
 
