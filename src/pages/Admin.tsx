@@ -21,6 +21,8 @@ import VistaPreviaTienda from "../Components/VistaPreviaTienda";
 import UbicacionTienda from "../Components/UbicacionTienda";
 import EsteticaCategorias from "../Components/EsteticaCategorias";
 import ResumenCajasAdmin from "../Components/empleados/ResumenCajasAdmin";
+import ModificarProductos from "./ModificarProductos";
+
 
 
 
@@ -60,10 +62,11 @@ interface Producto {
 
 export default function Admin() {
 
+
+
+  const [productos, setProductos] = useState<any[]>([]);
   const { usuario, rol } = useAuth();
   const navigate = useNavigate();
-
-  const [productos, setProductos] = useState<Producto[]>([]);
   const [nuevo, setNuevo] = useState<Producto>({
     nombre: "",
     precio: 0,
@@ -118,10 +121,10 @@ export default function Admin() {
   const [linkInstagram, setLinkInstagram] = useState("");
   const [linkFacebook, setLinkFacebook] = useState("");
 
-const [mercadoPagoPublicKey, setMercadoPagoPublicKey] = useState("");
-const [aliasMp, setAliasMp] = useState("");
-const [cbu, setCbu] = useState("");
-const [aliasBancario, setAliasBancario] = useState("");
+  const [mercadoPagoPublicKey, setMercadoPagoPublicKey] = useState("");
+  const [aliasMp, setAliasMp] = useState("");
+  const [cbu, setCbu] = useState("");
+  const [aliasBancario, setAliasBancario] = useState("");
 
 
   const cellStyle = {
@@ -149,56 +152,58 @@ const [aliasBancario, setAliasBancario] = useState("");
 
   const tiendaId = localStorage.getItem("userId") || "";
 
+
   useEffect(() => {
     if (rol && rol !== "admin") {
       navigate("/"); // redirige si no es admin
     }
   }, [rol, navigate]);
 
- useEffect(() => {
-  if (!usuario) return;
+  useEffect(() => {
+    
+    if (!usuario) return;
 
-  const cargarDatos = async () => {
-    const configRef = doc(db, "tiendas", usuario.uid);
-    const configSnap = await getDoc(configRef);
-    if (configSnap.exists()) {
-      const data = configSnap.data();
+    const cargarDatos = async () => {
+      const configRef = doc(db, "tiendas", usuario.uid);
+      const configSnap = await getDoc(configRef);
+      if (configSnap.exists()) {
+        const data = configSnap.data();
 
-      setMercadoPagoToken(data.mercadoPagoToken || "");
-      setMercadoPagoPublicKey(data.mercadoPagoPublicKey || "");
-      setAliasMp(data.aliasMp || "");
-      setCbu(data.cbu || "");
-      setAliasBancario(data.aliasBancario || "");
+        setMercadoPagoToken(data.mercadoPagoToken || "");
+        setMercadoPagoPublicKey(data.mercadoPagoPublicKey || "");
+        setAliasMp(data.aliasMp || "");
+        setCbu(data.cbu || "");
+        setAliasBancario(data.aliasBancario || "");
 
-      setWhatsappReservas(data.whatsappReservas || "");
-      setAceptarReservasAuto(data.aceptarReservasAuto || false);
-      setNombre(data.nombre || "");
-      setDescripcion(data.descripcion || "");
-      setImagen(data.imagen || "");
-      setLogo(data.logo || "");
-      setTextoHero(data.textoHero || "");
-      setColorFondo(data.colorFondo || "#ffffff");
-      setColorBoton(data.colorBoton || "#000000");
-      setWhatsapp(data.whatsapp || "");
-      setCorreoNotificacion(data.correoNotificacion || "");
-      setWhatsappNotificacion(data.whatsappNotificacion || "");
-      setRecibirPorCorreo(data.recibirPorCorreo || false);
-      setRecibirPorWhatsapp(data.recibirPorWhatsapp || false);
+        setWhatsappReservas(data.whatsappReservas || "");
+        setAceptarReservasAuto(data.aceptarReservasAuto || false);
+        setNombre(data.nombre || "");
+        setDescripcion(data.descripcion || "");
+        setImagen(data.imagen || "");
+        setLogo(data.logo || "");
+        setTextoHero(data.textoHero || "");
+        setColorFondo(data.colorFondo || "#ffffff");
+        setColorBoton(data.colorBoton || "#000000");
+        setWhatsapp(data.whatsapp || "");
+        setCorreoNotificacion(data.correoNotificacion || "");
+        setWhatsappNotificacion(data.whatsappNotificacion || "");
+        setRecibirPorCorreo(data.recibirPorCorreo || false);
+        setRecibirPorWhatsapp(data.recibirPorWhatsapp || false);
 
-      setLinkInstagram(data.linkInstagram || "");
-      setLinkFacebook(data.linkFacebook || "");
-      setGoogleMaps(data.googleMaps || "");
-      setInstagram(data.instagram || "");
-      setFacebook(data.facebook || "");
-      setTiktok(data.tiktok || "");
-      setPosicionBanner(data.posicionBanner || "center");
-      setTamañoBanner(data.tamañoBanner || "cover");
-      setTextoUbicacion(data.textoUbicacion || "");
-    }
-  };
+        setLinkInstagram(data.linkInstagram || "");
+        setLinkFacebook(data.linkFacebook || "");
+        setGoogleMaps(data.googleMaps || "");
+        setInstagram(data.instagram || "");
+        setFacebook(data.facebook || "");
+        setTiktok(data.tiktok || "");
+        setPosicionBanner(data.posicionBanner || "center");
+        setTamañoBanner(data.tamañoBanner || "cover");
+        setTextoUbicacion(data.textoUbicacion || "");
+      }
+    };
 
-  cargarDatos();
-}, [usuario]);
+    cargarDatos();
+  }, [usuario]);
 
 
 
@@ -635,126 +640,7 @@ const [aliasBancario, setAliasBancario] = useState("");
             ➕ Agregar producto
           </button>
 
-
-          <h3>Modificar productos existentes</h3>
-
-          <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "0 1rem" }}>
-
-            {/* 🔎 Filtros de búsqueda */}
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", marginBottom: "1rem" }}>
-              <input
-                type="text"
-                placeholder="Buscar por nombre"
-                value={filtroNombre}
-                onChange={(e) => setFiltroNombre(e.target.value)}
-                style={{ flex: "1", padding: "0.4rem" }}
-              />
-
-              <select
-                value={ordenPrecio}
-                onChange={(e) => setOrdenPrecio(e.target.value as any)}
-                style={{ padding: "0.4rem" }}
-              >
-                <option value="">Ordenar por precio</option>
-                <option value="asc">Menor a mayor</option>
-                <option value="desc">Mayor a menor</option>
-              </select>
-
-              <input
-                type="text"
-                placeholder="Filtrar por categoría"
-                list="categorias-sugeridas"
-                value={filtroCategoria}
-                onChange={(e) => setFiltroCategoria(e.target.value)}
-                style={{ flex: "1", padding: "0.4rem" }}
-              />
-              <datalist id="categorias-sugeridas">
-                {categorias.map((cat, idx) => (
-                  <option key={idx} value={cat} />
-                ))}
-              </datalist>
-            </div>
-
-            {/* 🧾 Tabla de productos */}
-            <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "1rem" }}>
-              <thead>
-                <tr style={{ background: "#f0f0f0", textAlign: "left" }}>
-                  <th style={cellStyle}>Nombre</th>
-                  <th style={cellStyle}>Precio</th>
-                  <th style={cellStyle}>Reserva</th>
-                  <th style={cellStyle}>Precio Total</th>
-                  <th style={cellStyle}>Stock</th>
-                  <th style={cellStyle}>Categoría</th>
-                  <th style={cellStyle}>Tipo</th>
-                  <th style={cellStyle}>Envío Gratis</th>
-                  <th style={cellStyle}>Cuotas</th>
-                  <th style={cellStyle}>Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {productosFiltrados.map((p) => (
-                  <tr key={p.id}>
-                    <td style={cellStyle}>
-                      <input value={p.nombre} onChange={(e) => editarCampo(p.id!, "nombre", e.target.value)} />
-                    </td>
-
-                    <td style={cellStyle}>
-                      {p.tipo === "producto" ? (
-                        <input type="number" value={p.precio} onChange={(e) => editarCampo(p.id!, "precio", Number(e.target.value))} />
-                      ) : (
-                        "-"
-                      )}
-                    </td>
-
-                    <td style={cellStyle}>
-                      {p.tipo === "servicio" ? (
-                        <input type="number" value={p.precioReserva || 0} onChange={(e) => editarCampo(p.id!, "precioReserva", Number(e.target.value))} />
-                      ) : (
-                        "-"
-                      )}
-                    </td>
-
-                    <td style={cellStyle}>
-                      {p.tipo === "servicio" ? (
-                        <input type="number" value={p.precioTotal || 0} onChange={(e) => editarCampo(p.id!, "precioTotal", Number(e.target.value))} />
-                      ) : (
-                        "-"
-                      )}
-                    </td>
-
-                    <td style={cellStyle}>
-                      <input type="number" value={p.stock} onChange={(e) => editarCampo(p.id!, "stock", Number(e.target.value))} />
-                    </td>
-
-                    <td style={cellStyle}>
-                      <input value={p.categoria || ""} onChange={(e) => editarCampo(p.id!, "categoria", e.target.value)} />
-                    </td>
-
-                    <td style={cellStyle}>
-                      <select value={p.tipo} onChange={(e) => editarCampo(p.id!, "tipo", e.target.value)}>
-                        <option value="producto">Producto</option>
-                        <option value="servicio">Servicio</option>
-                      </select>
-                    </td>
-
-                    <td style={cellStyle}>
-                      <input type="checkbox" checked={p.envioGratis || false} onChange={(e) => editarCampo(p.id!, "envioGratis", e.target.checked)} />
-                    </td>
-
-                    <td style={cellStyle}>
-                      <input value={p.cuotas || ""} onChange={(e) => editarCampo(p.id!, "cuotas", e.target.value)} />
-                    </td>
-
-                    <td style={cellStyle}>
-                      <button onClick={() => actualizarProducto(p)} style={btnStyle("green")}>💾</button>
-                      <button onClick={() => deleteProduct(p.id!)} style={btnStyle("red")}>🗑️</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
+<ModificarProductos />
 
         </>
       )}
@@ -881,7 +767,7 @@ const [aliasBancario, setAliasBancario] = useState("");
 
 
 
- {/* 🔔 Sección: Notificaciones */}
+      {/* 🔔 Sección: Notificaciones */}
 
       {/* 🔔 Sección: Notificaciones */}
       {seccionActiva === "notificaciones" && (

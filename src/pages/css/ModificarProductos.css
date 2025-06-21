@@ -1,0 +1,207 @@
+/* Estilos para la sección de Modificar Productos */
+.modificar-productos-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+    box-sizing: border-box;
+}
+
+.filtros-productos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.filtros-productos input,
+.filtros-productos select {
+    padding: 0.5rem;
+    flex: 1 1 200px;
+    min-width: 200px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.tabla-productos {
+    width: 100%;
+    border-collapse: collapse;
+    overflow-x: auto;
+    display: block;
+}
+
+.tabla-productos thead tr {
+    background-color: #f4f4f4;
+    text-align: left;
+}
+
+.tabla-productos th,
+.tabla-productos td {
+    padding: 0.6rem;
+    border: 1px solid #ddd;
+    vertical-align: middle;
+}
+
+.tabla-productos input,
+.tabla-productos select,
+.tabla-productos textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.3rem;
+    font-size: 0.85rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.botones-producto {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+.boton-guardar {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 0.4rem 0.6rem;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.boton-eliminar {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 0.4rem 0.6rem;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+@media (max-width: 768px) {
+    .tabla-productos thead {
+        display: none;
+    }
+
+    .tabla-productos tr {
+        display: block;
+        margin-bottom: 1rem;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 0.5rem;
+        background: #fff;
+    }
+
+    .tabla-productos td {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem;
+        border: none;
+        border-bottom: 1px solid #eee;
+    }
+
+    .tabla-productos td::before {
+        content: attr(data-label);
+        font-weight: bold;
+        margin-right: 1rem;
+        flex: 1;
+    }
+
+    .tabla-productos td:last-child {
+        border-bottom: none;
+    }
+
+    .tabla-productos input,
+    .tabla-productos select,
+    .tabla-productos textarea {
+        flex: 2;
+    }
+}
+
+.tabla-wrapper {
+  overflow-x: auto;
+  position: relative;
+  border: 1px solid #ddd;
+  max-width: 100%;
+}
+
+
+.tabla-productos {
+  min-width: 1200px; /* Asegura scroll si no entra */
+}
+
+.tabla-wrapper::-webkit-scrollbar {
+  height: 10px;
+}
+
+.tabla-wrapper::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 5px;
+}
+
+.tabla-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+/* Mejora para inputs: más grandes, se expanden al hacer foco */
+.tabla-productos input,
+.tabla-productos select,
+.tabla-productos textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.4rem;
+  font-size: 0.85rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  max-width: 300px;
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+.tabla-productos input:focus,
+.tabla-productos textarea:focus {
+  max-width: 600px;
+  background-color: #f9f9f9;
+  z-index: 3;
+  position: relative;
+  outline: 2px solid #4caf50;
+}
+.tabla-productos textarea {
+  resize: vertical;
+  min-height: 2.5rem;
+  max-height: 200px;
+  overflow-y: auto;
+  width: 100%;
+  max-width: 600px;
+}
+
+.tabla-productos textarea:focus {
+  background-color: #f9f9f9;
+  outline: 2px solid #4caf50;
+  z-index: 2;
+  position: relative;
+}
+.tabla-productos textarea {
+  resize: none;
+  overflow: hidden;
+  min-height: 30px;
+  padding: 4px;
+  font-size: 0.85rem;
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  transition: height 0.2s ease;
+}
+
+/* Textareas más grandes para nombre, descripciones e imagen */
+.tabla-productos textarea[data-campo="nombre"],
+.tabla-productos textarea[data-campo="descripcionCorta"],
+.tabla-productos textarea[data-campo="descripcionLarga"],
+.tabla-productos textarea[data-campo="imagen"] {
+  min-height: 60px;
+  max-height: 300px;
+  height: auto;
+  overflow-y: auto;
+  font-size: 0.9rem;
+  resize: vertical;
+}

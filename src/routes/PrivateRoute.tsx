@@ -11,3 +11,5 @@ export default function PrivateRoute({ children }: { children: ReactNode }) {
 
     return children;
 }
+localStorage.getItem("userId");
+
