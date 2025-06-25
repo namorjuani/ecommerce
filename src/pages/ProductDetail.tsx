@@ -7,6 +7,7 @@ import Header from "../Components/Header";
 import "./css/ProductDetail.css";
 import { useTienda } from "../context/TiendaContext";
 
+// 👇 Cambios en la interfaz
 interface Producto {
   id?: string;
   nombre: string;
@@ -25,7 +26,9 @@ interface Producto {
   }[];
   precioReserva?: number;
   precioTotal?: number;
+  videoYoutube?: string; 
 }
+
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -91,6 +94,13 @@ export default function ProductDetail() {
     navigate("/");
   };
 
+  function obtenerIdYoutube(url: string): string {
+  const regex =
+    /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+  const match = url.match(regex);
+  return match ? match[1] : "";
+}
+
   return (
     <>
       <Header
@@ -149,7 +159,29 @@ export default function ProductDetail() {
               />
             ))}
           </div>
-        </div>
+         {producto.videoYoutube && (
+    <div style={{ marginTop: "1.5rem" }}>
+      <h4 style={{ marginBottom: "0.5rem" }}>🎥 Video del producto</h4>
+      <div style={{ position: "relative", paddingBottom: "56.25%", height: 0, overflow: "hidden", borderRadius: "10px" }}>
+        <iframe
+          src={`https://www.youtube.com/embed/${obtenerIdYoutube(producto.videoYoutube)}`}
+          title="Video del producto"
+          frameBorder="0"
+          allowFullScreen
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+          }}
+        />
+      </div>
+    </div>
+  )}
+</div>
+
+        
 
         <div style={{ flex: "1", minWidth: "300px" }}>
           <h2>{producto.nombre}</h2>

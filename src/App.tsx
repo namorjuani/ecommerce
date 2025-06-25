@@ -19,6 +19,8 @@ import CheckoutReserva from "./pages/CheckoutReserva";
 import ResultadoBusqueda from "./pages/ResultadoBusqueda";
 import { TiendaProvider } from "./context/TiendaContext";
 import FormaDePagoEmpleado from "./Components/empleados/FormaDePagoEmpleado";
+import Gracias from "./pages/Gracias";
+import Tienda from "./pages/Tienda";
 
 export default function App() {
   return (
@@ -27,31 +29,52 @@ export default function App() {
         <CarritoProvider>
           <TiendaProvider>
             <Router>
-              <Layout>
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/producto/:id" element={<ProductDetail />} />
-                  <Route path="/checkout" element={<Checkout />} />
-                  <Route path="/forma-entrega" element={<FormaEntrega />} />
-                  <Route path="/forma-pago" element={<FormaDePago />} />
-                  <Route path="/compra-realizada" element={<CompraRealizada />} />
-                  <Route path="/datos-envio" element={<DatosEnvio />} />
-                  <Route path="/agendar-servicio/:id" element={<AgendarServicio />} />
-                  <Route path="/checkout-reserva" element={<CheckoutReserva />} />
-                  <Route path="/buscar/:termino" element={<ResultadoBusqueda />} />
-                  <Route path="/empleado/forma-pago" element={<FormaDePagoEmpleado />} />
-                  <Route
-                    path="/admin"
-                    element={
-                      <PrivateRoute>
-                        <Admin />
-                      </PrivateRoute>
-                    }
-                  />
-                  <Route path="/admin/pedidos" element={<Pedidos />} />
-                </Routes>
-              </Layout>
+              <Routes>
+
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/gracias" element={<Gracias />} />
+
+                {/* Vista de una tienda específica */}
+                <Route
+                  path="/tienda/:slug/*"
+                  element={
+                    <Layout>
+                      <Routes>
+                        <Route path="" element={<Tienda />} />
+                        <Route path="producto/:id" element={<ProductDetail />} />
+                        <Route path="checkout" element={<Checkout />} />
+                        <Route path="forma-entrega" element={<FormaEntrega />} />
+                        <Route path="forma-pago" element={<FormaDePago />} />
+                        <Route path="compra-realizada" element={<CompraRealizada />} />
+                        <Route path="datos-envio" element={<DatosEnvio />} />
+                        <Route path="agendar-servicio/:id" element={<AgendarServicio />} />
+                        <Route path="checkout-reserva" element={<CheckoutReserva />} />
+                        <Route path="buscar/:termino" element={<ResultadoBusqueda />} />
+                        <Route path="empleado/forma-pago" element={<FormaDePagoEmpleado />} />
+                      </Routes>
+                    </Layout>
+                  }
+                />
+
+                {/* Admin con slug */}
+                <Route
+                  path="/admin/:slug"
+                  element={
+                    <PrivateRoute>
+                      <Admin />
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/admin/pedidos"
+                  element={
+                    <PrivateRoute>
+                      <Pedidos />
+                    </PrivateRoute>
+                  }
+                />
+              </Routes>
             </Router>
           </TiendaProvider>
         </CarritoProvider>

@@ -1,5 +1,5 @@
 import { ReactNode, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCarrito } from "../context/CarritoContext";
 import Footer from "./Footer";
@@ -10,6 +10,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const { usuario, esAdmin, cerrarSesion } = useAuth();
   const { carrito } = useCarrito();
   const tienda = useTienda();
+  const { slug } = useParams();
 
   useEffect(() => {
     if (tienda?.colorFondo) {
@@ -26,8 +27,8 @@ export default function Layout({ children }: { children: ReactNode }) {
         <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
           {usuario ? (
             <>
-              {esAdmin && (
-                <button className="login-btn" onClick={() => navigate("/admin")}>
+              {esAdmin && slug && (
+                <button className="login-btn" onClick={() => navigate(`/admin/${slug}`)}>
                   Modo Admin
                 </button>
               )}
@@ -48,3 +49,4 @@ export default function Layout({ children }: { children: ReactNode }) {
     </div>
   );
 }
+

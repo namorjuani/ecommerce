@@ -34,6 +34,7 @@ interface Producto {
   imagen?: string;
   codigoBarras?: string;
   fechaCreacion?: Timestamp;
+  videoYoutube?: string;
 }
 
 export default function ModificarProductos() {
@@ -214,191 +215,56 @@ export default function ModificarProductos() {
               <th>Desc. corta</th>
               <th>Desc. larga</th>
               <th>Imagen</th>
+              <th>Video YouTube</th>
               <th>Cod. barras</th>
               <th>Variantes</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
-  {productosFiltrados.map((p) => (
-    <tr key={p.id}>
-      <td data-label="Seleccionar">
-        <input
-          className="casilla-seleccion"
-          type="checkbox"
-          checked={seleccionados.has(p.id)}
-          onChange={() => toggleSeleccion(p.id)}
-        />
-      </td>
-      <td data-label="Nombre">
-        <textarea
-          data-campo="nombre"
-          value={p.nombre}
-          readOnly
-          onClick={async () => {
-            const { value: nuevo } = await Swal.fire({
-              title: "Editar nombre",
-              input: "textarea",
-              inputValue: p.nombre,
-              showCancelButton: true,
-              confirmButtonText: "Guardar",
-              cancelButtonText: "Cancelar"
-            });
-            if (nuevo !== undefined) editarCampo(p.id, "nombre", nuevo);
-          }}
-        />
-      </td>
-      <td data-label="Precio">
-        <textarea
-          value={p.precio.toString()}
-          onChange={(e) => editarCampo(p.id, "precio", +e.target.value)}
-        />
-      </td>
-      <td data-label="Reserva">
-        <textarea
-          value={(p.precioReserva || 0).toString()}
-          onChange={(e) => editarCampo(p.id, "precioReserva", +e.target.value)}
-        />
-      </td>
-      <td data-label="Total">
-        <textarea
-          value={(p.precioTotal || 0).toString()}
-          onChange={(e) => editarCampo(p.id, "precioTotal", +e.target.value)}
-        />
-      </td>
-      <td data-label="Stock">
-        <textarea
-          value={p.stock.toString()}
-          onChange={(e) => editarCampo(p.id, "stock", +e.target.value)}
-        />
-      </td>
-      <td data-label="Cuotas">
-        <textarea
-          value={p.cuotas || ""}
-          onChange={(e) => editarCampo(p.id, "cuotas", e.target.value)}
-        />
-      </td>
-      <td data-label="Categoría">
-        <textarea
-          value={p.categoria}
-          onChange={(e) => editarCampo(p.id, "categoria", e.target.value)}
-        />
-      </td>
-      <td data-label="Tipo">
-        <select
-          value={p.tipo}
-          onChange={(e) => editarCampo(p.id, "tipo", e.target.value as any)}
-        >
-          <option value="producto">Producto</option>
-          <option value="servicio">Servicio</option>
-        </select>
-      </td>
-      <td data-label="Envío Gratis">
-        <input
-          type="checkbox"
-          checked={p.envioGratis || false}
-          onChange={(e) => editarCampo(p.id, "envioGratis", e.target.checked)}
-        />
-      </td>
-      <td data-label="Desc. corta">
-        <textarea
-          data-campo="descripcionCorta"
-          value={p.descripcionCorta || ""}
-          readOnly
-          onClick={async () => {
-            const { value: nuevo } = await Swal.fire({
-              title: "Editar descripción corta",
-              input: "textarea",
-              inputValue: p.descripcionCorta || "",
-              showCancelButton: true,
-              confirmButtonText: "Guardar"
-            });
-            if (nuevo !== undefined) editarCampo(p.id, "descripcionCorta", nuevo);
-          }}
-        />
-      </td>
-      <td data-label="Desc. larga">
-        <textarea
-          data-campo="descripcionLarga"
-          value={p.descripcionLarga || ""}
-          readOnly
-          onClick={async () => {
-            const { value: nuevo } = await Swal.fire({
-              title: "Editar descripción larga",
-              input: "textarea",
-              inputValue: p.descripcionLarga || "",
-              showCancelButton: true,
-              confirmButtonText: "Guardar"
-            });
-            if (nuevo !== undefined) editarCampo(p.id, "descripcionLarga", nuevo);
-          }}
-        />
-      </td>
-      <td data-label="Imagen">
-        <textarea
-          data-campo="imagen"
-          value={p.imagen || ""}
-          readOnly
-          onClick={async () => {
-            const { value: nuevo } = await Swal.fire({
-              title: "Editar URL de imagen",
-              input: "textarea",
-              inputValue: p.imagen || "",
-              showCancelButton: true,
-              confirmButtonText: "Guardar"
-            });
-            if (nuevo !== undefined) editarCampo(p.id, "imagen", nuevo);
-          }}
-        />
-      </td>
-      <td data-label="Cod. barras">
-        <textarea
-          value={p.codigoBarras || ""}
-          onChange={(e) => editarCampo(p.id, "codigoBarras", e.target.value)}
-        />
-      </td>
-      <td data-label="Variantes">
-        {p.variantes?.map((v, i) => (
-          <div key={i}>
-            <textarea
-              value={v.nombre}
-              onChange={(e) => {
-                const nuevas = [...(p.variantes || [])];
-                nuevas[i].nombre = e.target.value;
-                editarCampo(p.id, "variantes", nuevas);
-              }}
-              placeholder="Nombre variante"
-            />
-            <textarea
-              value={v.stock.toString()}
-              onChange={(e) => {
-                const nuevas = [...(p.variantes || [])];
-                nuevas[i].stock = +e.target.value;
-                editarCampo(p.id, "variantes", nuevas);
-              }}
-              placeholder="Stock"
-            />
-          </div>
-        ))}
-      </td>
-      <td className="botones-producto" data-label="Acciones">
-        <button
-          className="boton-guardar"
-          onClick={() => actualizarProducto(p)}
-        >
-          💾
-        </button>
-        <button
-          className="boton-eliminar"
-          onClick={() => eliminarProducto(p.id)}
-        >
-          🗑️
-        </button>
-      </td>
-    </tr>
-  ))}
-</tbody>
-
+            {productosFiltrados.map((p) => (
+              <tr key={p.id}>
+                <td><input type="checkbox" checked={seleccionados.has(p.id)} onChange={() => toggleSeleccion(p.id)} /></td>
+                <td><textarea value={p.nombre} onChange={(e) => editarCampo(p.id, "nombre", e.target.value)} /></td>
+                <td><textarea value={p.precio.toString()} onChange={(e) => editarCampo(p.id, "precio", +e.target.value)} /></td>
+                <td><textarea value={(p.precioReserva || 0).toString()} onChange={(e) => editarCampo(p.id, "precioReserva", +e.target.value)} /></td>
+                <td><textarea value={(p.precioTotal || 0).toString()} onChange={(e) => editarCampo(p.id, "precioTotal", +e.target.value)} /></td>
+                <td><textarea value={p.stock.toString()} onChange={(e) => editarCampo(p.id, "stock", +e.target.value)} /></td>
+                <td><textarea value={p.cuotas || ""} onChange={(e) => editarCampo(p.id, "cuotas", e.target.value)} /></td>
+                <td><textarea value={p.categoria} onChange={(e) => editarCampo(p.id, "categoria", e.target.value)} /></td>
+                <td>
+                  <select value={p.tipo} onChange={(e) => editarCampo(p.id, "tipo", e.target.value as any)}>
+                    <option value="producto">Producto</option>
+                    <option value="servicio">Servicio</option>
+                  </select>
+                </td>
+                <td><input type="checkbox" checked={p.envioGratis || false} onChange={(e) => editarCampo(p.id, "envioGratis", e.target.checked)} /></td>
+                <td><textarea value={p.descripcionCorta || ""} onChange={(e) => editarCampo(p.id, "descripcionCorta", e.target.value)} /></td>
+                <td><textarea value={p.descripcionLarga || ""} onChange={(e) => editarCampo(p.id, "descripcionLarga", e.target.value)} /></td>
+                <td><textarea value={p.imagen || ""} onChange={(e) => editarCampo(p.id, "imagen", e.target.value)} /></td>
+                <td><textarea value={p.videoYoutube || ""} onChange={(e) => editarCampo(p.id, "videoYoutube", e.target.value)} placeholder="https://www.youtube.com/watch?v=..." /></td>
+                <td><textarea value={p.codigoBarras || ""} onChange={(e) => editarCampo(p.id, "codigoBarras", e.target.value)} /></td>
+                <td>{p.variantes?.map((v, i) => (
+                  <div key={i}>
+                    <textarea value={v.nombre} onChange={(e) => {
+                      const nuevas = [...(p.variantes || [])];
+                      nuevas[i].nombre = e.target.value;
+                      editarCampo(p.id, "variantes", nuevas);
+                    }} placeholder="Nombre variante" />
+                    <textarea value={v.stock.toString()} onChange={(e) => {
+                      const nuevas = [...(p.variantes || [])];
+                      nuevas[i].stock = +e.target.value;
+                      editarCampo(p.id, "variantes", nuevas);
+                    }} placeholder="Stock" />
+                  </div>
+                ))}</td>
+                <td>
+                  <button className="boton-guardar" onClick={() => actualizarProducto(p)}>💾</button>
+                  <button className="boton-eliminar" onClick={() => eliminarProducto(p.id)}>🗑️</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
         </table>
       </div>
     </div>
