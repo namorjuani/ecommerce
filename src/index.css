@@ -1,0 +1,28 @@
+/* Fuente Roboto desde Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
+
+:root {
+  --color-fondo: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-fondo);
+  transition: background-color 0.3s ease;
+}
+
+.layout {
+  background-color: var(--color-fondo);
+}
+
+.main-content {
+  background-color: var(--color-fondo);
+}
+
+.home-container {
+  background-color: var(--color-fondo); /* Agregalo si no existe */
+  transition: background-color 0.3s ease;
+}
+

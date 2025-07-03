@@ -1,0 +1,39 @@
+.gracias-container {
+  max-width: 400px;
+  margin: auto;
+  text-align: center;
+  padding: 2rem;
+  background-color: #f9f9f9;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.gracias-container input {
+  width: 100%;
+  padding: 12px;
+  margin: 0.5rem 0;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.gracias-container input:focus {
+  border-color: #3483fa;
+}
+
+.gracias-container button {
+  padding: 12px 20px;
+  font-size: 16px;
+  background-color: #3483fa;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.gracias-container button:hover {
+  background-color: #2a6edb;
+}

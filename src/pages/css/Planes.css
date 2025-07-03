@@ -1,0 +1,76 @@
+.planes-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 2rem;
+  padding: 4rem 2rem;
+  background: linear-gradient(to bottom, #f5faff, #e9f0f9);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.plan-card {
+  background-color: white;
+  border-radius: 1rem;
+  padding: 2rem 1.5rem;
+  width: 280px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  text-align: center;
+  position: relative;
+  transition: transform 0.3s ease;
+}
+
+.plan-card:hover {
+  transform: scale(1.05);
+}
+
+.plan-card.featured {
+  transform: scale(1.1);
+  z-index: 2;
+  background: linear-gradient(135deg, #ff6f61, #ff9472);
+  color: white;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.plan-title {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+}
+
+.plan-price {
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 1.2rem 0;
+}
+
+.plan-features {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 2rem;
+}
+
+.plan-features li {
+  margin: 0.5rem 0;
+  font-size: 0.95rem;
+}
+
+.plan-card.featured .plan-title,
+.plan-card.featured .plan-features li {
+  color: white;
+}
+
+.plan-button {
+  background-color: #3483fa;
+  color: white;
+  border: none;
+  padding: 0.7rem 1.5rem;
+  border-radius: 999px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.plan-button:hover {
+  background-color: #1c5edb;
+}

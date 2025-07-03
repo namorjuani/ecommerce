@@ -1,0 +1,71 @@
+.landing-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  font-family: 'Segoe UI', sans-serif;
+  text-align: center;
+}
+
+.landing-container header {
+  margin-bottom: 3rem;
+}
+
+.landing-container h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.landing-container p {
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.landing-container button {
+  margin-top: 1rem;
+  padding: 0.7rem 1.5rem;
+  font-size: 1rem;
+  background-color: #3483fa;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.landing-container section {
+  background-color: #f9f9f9;
+  padding: 2rem;
+  margin-top: 2rem;
+  border-radius: 12px;
+  text-align: left;
+}
+
+.landing-container h2 {
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+  color: #222;
+}
+
+.landing-container ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.landing-container li {
+  font-size: 1.1rem;
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.landing-container li::before {
+  content: "✔️";
+  position: absolute;
+  left: 0;
+}
+
+.landing-container footer {
+  margin-top: 4rem;
+  font-size: 0.9rem;
+  color: #888;
+}

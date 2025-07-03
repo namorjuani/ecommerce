@@ -1,0 +1,77 @@
+/* Admin.css */
+.admin-container {
+    max-width: 800px;
+    margin: auto;
+    padding: 2rem;
+    font-family: sans-serif;
+  }
+  
+  .admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+  
+  .admin-header h2 {
+    margin: 0;
+  }
+  
+  .config-section,
+  .product-section {
+    margin-bottom: 2.5rem;
+  }
+  
+  .config-section label,
+  .product-section label {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-weight: bold;
+  }
+  
+  .config-section input,
+  .config-section textarea,
+  .product-section input,
+  .product-section textarea,
+  .product-section select {
+    width: 100%;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  .product-section .checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .admin-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  
+  .admin-buttons button {
+    padding: 0.6rem 1.2rem;
+    border: none;
+    background-color: #007bff;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .admin-buttons button:hover {
+    background-color: #0056b3;
+  }
+  
+  .return-button {
+    background-color: #6c757d;
+  }
+  
+  .return-button:hover {
+    background-color: #5a6268;
+  }
+  
