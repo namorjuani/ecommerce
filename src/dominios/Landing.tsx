@@ -11,7 +11,7 @@ export default function Landing() {
       <header>
         <h1>🛍️ Creá tu propia tienda online</h1>
         <p>Sin comisiones. Sin complicaciones. Todo listo para vender.</p>
-        <button onClick={() => navigate("/planes")}>Ver planes</button>
+
       </header>
 
       <section>
@@ -32,9 +32,10 @@ export default function Landing() {
           {/* Básico */}
           <div className="plan-card">
             <div className="plan-title">Básico</div>
-            <div className="plan-price">$10 / mes</div>
+            <div className="plan-price">$30 / mes</div>
             <ul className="plan-features">
               <li>1 categoría</li>
+              <li>50 productos</li>
               <li>Sin integración de pagos</li>
               <li>Sin WhatsApp</li>
               <li>Dominio temporal</li>
@@ -47,12 +48,13 @@ export default function Landing() {
           {/* Estándar */}
           <div className="plan-card featured">
             <div className="plan-title">Estándar</div>
-            <div className="plan-price">$25 / mes</div>
+            <div className="plan-price">$50 / mes</div>
             <ul className="plan-features">
               <li>Categorías ilimitadas</li>
+              <li>Hasta 300 productos</li>
               <li>Integración Mercado Pago</li>
               <li>Botón WhatsApp</li>
-              <li>Dominio personalizado</li>
+              <li>Manejo de empleados y cajas</li>
             </ul>
             <button className="plan-button" onClick={() => navigate("/gracias")}>
               Contratar ahora
@@ -62,9 +64,10 @@ export default function Landing() {
           {/* Premium */}
           <div className="plan-card">
             <div className="plan-title">Premium</div>
-            <div className="plan-price">$50 / mes</div>
+            <div className="plan-price">$85 / mes</div>
             <ul className="plan-features">
               <li>Todo lo del Estándar</li>
+              <li>1000 productos</li>
               <li>Publicidad incluida</li>
               <li>Soporte prioritario</li>
               <li>Consultor personalizado</li>

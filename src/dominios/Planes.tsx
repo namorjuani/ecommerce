@@ -39,7 +39,7 @@ export default function Planes() {
       {/* Plan Premium */}
       <div className="plan-card">
         <div className="plan-title">Premium</div>
-        <div className="plan-price">$50 / mes</div>
+        <div className="plan-price">$50.000 / mes</div>
         <ul className="plan-features">
           <li>Todo lo del Estándar</li>
           <li>Publicidad incluida</li>

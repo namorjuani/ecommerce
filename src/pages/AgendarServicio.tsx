@@ -18,26 +18,31 @@ export default function AgendarServicio() {
   const navigate = useNavigate();
   const tienda = useTienda();
   const [producto, setProducto] = useState<Producto | null>(null);
-  const [numeroWhatsapp, setNumeroWhatsapp] = useState("");
+  const [numeroWhatsapp, setNumeroWhatsapp] = useState<string | null>(null);
 
   useEffect(() => {
     if (!slug || !id) return;
 
     const cargarDatos = async () => {
       try {
-        // Producto
         const prodRef = doc(db, "tiendas", slug, "productos", id);
         const prodSnap = await getDoc(prodRef);
         if (prodSnap.exists()) {
           setProducto({ ...(prodSnap.data() as Producto), id });
         }
 
-        // Tienda (para WhatsApp reservas)
         const tiendaRef = doc(db, "tiendas", slug);
         const tiendaSnap = await getDoc(tiendaRef);
         if (tiendaSnap.exists()) {
           const data = tiendaSnap.data();
-          setNumeroWhatsapp(data.whatsappReservas || data.whatsapp || "");
+          const wpp = data.whatsappReservas || data.whatsapp || null;
+          setNumeroWhatsapp(wpp);
+          
+          if (wpp && prodSnap.exists()) {
+            const mensaje = `Hola, quiero reservar un turno para el servicio: ${prodSnap.data().nombre}`;
+            const url = `https://wa.me/${wpp.replace(/\D/g, "")}?text=${encodeURIComponent(mensaje)}`;
+            window.open(url, "_blank");
+          }
         }
       } catch (err) {
         console.error("Error cargando datos del servicio:", err);
@@ -50,9 +55,6 @@ export default function AgendarServicio() {
   if (!producto || !tienda) {
     return <p style={{ textAlign: "center", marginTop: "2rem" }}>Cargando servicio...</p>;
   }
-
-  const mensaje = `Hola, quiero reservar un turno para el servicio: ${producto.nombre}`;
-  const urlWhatsapp = `https://wa.me/${numeroWhatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(mensaje)}`;
 
   return (
     <>
@@ -84,29 +86,21 @@ export default function AgendarServicio() {
           </p>
         )}
 
-        <a
-          href={urlWhatsapp}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: "inline-block",
-            marginTop: "2rem",
-            padding: "0.8rem 1.5rem",
-            backgroundColor: "#25D366",
-            color: "#fff",
-            fontSize: "1.1rem",
-            borderRadius: "8px",
-            textDecoration: "none",
-          }}
-        >
-          📲 Reservar por WhatsApp
-        </a>
+        {numeroWhatsapp ? (
+          <p style={{ marginTop: "1rem", color: "#28a745", fontWeight: "bold" }}>
+            Redirigiendo a WhatsApp...
+          </p>
+        ) : (
+          <p style={{ marginTop: "1rem", color: "red", fontWeight: "bold" }}>
+            ⚠️ No se configuró un número de WhatsApp para reservas. Contactá al administrador.
+          </p>
+        )}
+
         <button
           onClick={() => navigate(`/tienda/${slug}`)}
           style={{
             display: "inline-block",
             marginTop: "1rem",
-            marginLeft: "1rem",
             padding: "0.8rem 1.5rem",
             backgroundColor: "#3483fa",
             color: "#fff",

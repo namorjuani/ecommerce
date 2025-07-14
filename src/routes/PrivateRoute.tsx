@@ -1,20 +1,25 @@
-// src/routes/PrivateRoute.tsx
 import { Navigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { ReactNode, useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 
-export default function PrivateRoute({ children }: { children: ReactNode }) {
+export default function PrivateRoute({
+  children,
+  permiteEmpleado = false,
+}: {
+  children: ReactNode;
+  permiteEmpleado?: boolean;
+}) {
   const { usuario } = useAuth();
   const { slug } = useParams();
   const tiendaId = slug || localStorage.getItem("userId") || "";
-  const [esAdmin, setEsAdmin] = useState<boolean | null>(null);
+  const [rolDetectado, setRolDetectado] = useState<"admin" | "empleado" | null>(null);
 
   useEffect(() => {
-    const verificarAdmin = async () => {
+    const verificarRol = async () => {
       if (!usuario || !tiendaId) {
-        setEsAdmin(false);
+        setRolDetectado(null);
         return;
       }
 
@@ -22,33 +27,30 @@ export default function PrivateRoute({ children }: { children: ReactNode }) {
         const tiendaRef = doc(db, "tiendas", tiendaId);
         const tiendaSnap = await getDoc(tiendaRef);
 
-        if (!tiendaSnap.exists()) {
-          setEsAdmin(false);
+        if (tiendaSnap.exists() && tiendaSnap.data()?.adminEmail === usuario.email) {
+          setRolDetectado("admin");
           return;
         }
 
-        const data = tiendaSnap.data();
-        if (data?.adminEmail === usuario.email) {
-          setEsAdmin(true);
+        const userRef = doc(db, "tiendas", tiendaId, "usuarios", usuario.email ?? "");
+        const userSnap = await getDoc(userRef);
+
+        if (userSnap.exists() && userSnap.data()?.rol === "empleado") {
+          setRolDetectado("empleado");
           return;
         }
 
-        const ref = doc(db, "tiendas", tiendaId, "usuarios", usuario.email ?? "");
-        const snap = await getDoc(ref);
-        setEsAdmin(snap.exists() && snap.data()?.rol === "admin");
+        setRolDetectado(null);
       } catch (error) {
         console.error("Error verificando rol:", error);
-        setEsAdmin(false);
+        setRolDetectado(null);
       }
     };
 
-    verificarAdmin();
+    verificarRol();
   }, [usuario, tiendaId]);
 
-  // Debug para chequear flujo si algo no funciona
-  console.log("PrivateRoute → usuario:", usuario?.email, "tiendaId:", tiendaId, "esAdmin:", esAdmin);
-
-  if (esAdmin === null) {
+  if (rolDetectado === null) {
     return (
       <div style={{ textAlign: "center", marginTop: "2rem" }}>
         <p>🔒 Verificando permisos...</p>
@@ -56,9 +58,8 @@ export default function PrivateRoute({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!esAdmin) {
-    return <Navigate to="/" replace />;
-  }
+  if (rolDetectado === "admin") return <>{children}</>;
+  if (permiteEmpleado && rolDetectado === "empleado") return <>{children}</>;
 
-  return <>{children}</>;
+  return <Navigate to="/" replace />;
 }

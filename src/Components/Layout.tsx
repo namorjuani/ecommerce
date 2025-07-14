@@ -9,7 +9,7 @@ import { db } from "../firebase";
 export default function Layout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const { slug } = useParams();
-  const { usuario, cerrarSesion } = useAuth();
+  const { usuario } = useAuth();
   const { carrito } = useCarrito();
   const [esAdmin, setEsAdmin] = useState(false);
   const [colorFondo, setColorFondo] = useState("#ffffff");
@@ -60,44 +60,11 @@ export default function Layout({ children }: { children: ReactNode }) {
     verificarAdminYColor();
   }, [usuario, slug]);
 
-  const irModoAdmin = () => {
-    const tiendaId = slugActivo || slug || localStorage.getItem("userId");
-    if (tiendaId) {
-      navigate(`/admin/${tiendaId}`);
-    } else {
-      alert("No se pudo determinar la tienda para el modo admin");
-    }
-  };
-
+  // Ya no hace falta el botón acá, lo mandamos al header
   return (
     <div className="layout" style={{ backgroundColor: colorFondo }}>
-      <header
-        className="navbar"
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          padding: "1rem",
-        }}
-      >
-        <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-          {usuario && (
-            <>
-              {esAdmin && (
-                <button className="login-btn" onClick={irModoAdmin}>
-                  🛠️ Modo Admin
-                </button>
-              )}
-              <button className="login-btn" onClick={cerrarSesion}>
-                Cerrar sesión
-              </button>
-            </>
-          )}
-        </div>
-      </header>
-
       <main className="main-content">{children}</main>
-
-      <Footer />  {/* El Footer se renderiza solo aquí */}
+      <Footer />
     </div>
   );
 }

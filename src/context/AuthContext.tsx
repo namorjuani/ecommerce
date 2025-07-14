@@ -6,12 +6,11 @@ import { doc, getDoc } from "firebase/firestore";
 interface AuthContextType {
   usuario: User | null;
   esAdmin: boolean;
-  esEmpleado: boolean;  // 👉 Ahora lo incluimos
+  esEmpleado: boolean;
   rol: string;
   cerrarSesion: () => void;
 }
 
-// 👉 Contexto base
 const AuthContext = createContext<AuthContextType>({
   usuario: null,
   esAdmin: false,
@@ -38,42 +37,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setRol("");
 
       if (user) {
-        const tiendaId = localStorage.getItem("userId");
+        try {
+          // 👑 Verificar si es ADMIN de una tienda
+          const tiendaId = localStorage.getItem("userId");
+if (tiendaId) {
+  const tiendaRef = doc(db, "tiendas", tiendaId);
+  const tiendaSnap = await getDoc(tiendaRef);
 
-        if (tiendaId) {
-          try {
-            const tiendaRef = doc(db, "tiendas", tiendaId);
-            const tiendaSnap = await getDoc(tiendaRef);
+  if (tiendaSnap.exists()) {
+    const data = tiendaSnap.data();
+    if (data.adminEmail === user.email) {
+      setEsAdmin(true);
+      setRol("admin");
+      return;
+    }
 
-            if (tiendaSnap.exists()) {
-              const data = tiendaSnap.data();
-              if (data.adminEmail === user.email) {
-                setEsAdmin(true);
-                setRol("admin");
-                return;
-              }
+    // ✅ Buscamos empleados correctamente
+    const userRef = doc(db, "tiendas", tiendaId, "usuarios", user.email || "");
+    const userSnap = await getDoc(userRef);
 
-              // Verificar si es usuario con rol
-              const userRef = doc(db, "tiendas", tiendaId, "usuarios", user.email || "");
-              const userSnap = await getDoc(userRef);
+    if (userSnap.exists()) {
+      const userData = userSnap.data();
+      if (userData.rol) {
+        setRol(userData.rol);
+        setEsAdmin(userData.rol === "admin");
+        setEsEmpleado(userData.rol === "empleado");
+        return;
+      }
+    }
+  }
+}
 
-              if (userSnap.exists()) {
-                const userData = userSnap.data();
-                if (userData.rol) {
-                  setRol(userData.rol);
-                  setEsAdmin(userData.rol === "admin");
-                  setEsEmpleado(userData.rol === "empleado");
-                  return;
-                }
-              }
-            }
-          } catch (error) {
-            console.error("Error cargando datos de usuario:", error);
-          }
+          // 👤 Por defecto es cliente
+          setRol("cliente");
+
+        } catch (error) {
+          console.error("Error cargando datos de usuario:", error);
         }
-
-        // Por defecto lo tratamos como cliente
-        setRol("cliente");
       }
     });
 

@@ -24,6 +24,7 @@ import Tienda from "./pages/Tienda";
 import Landing from "./dominios/Landing";
 import Planes from "./dominios/Planes";
 import SeleccionarTienda from "./dominios/SeleccionarTienda";
+import Historial from "./pages/Historial";
 
 export default function App() {
   return (
@@ -33,12 +34,10 @@ export default function App() {
           <TiendaProvider>
             <Router>
               <Routes>
-                {/* Página pública de tu negocio */}
                 <Route path="/" element={<Landing />} />
                 <Route path="/planes" element={<Planes />} />
                 <Route path="/gracias" element={<Gracias />} />
 
-                {/* Tiendas de usuarios */}
                 <Route path="/tienda/:slug" element={<Layout><Tienda /></Layout>} />
                 <Route path="/tienda/:slug/producto/:id" element={<Layout><ProductDetail /></Layout>} />
                 <Route path="/tienda/:slug/checkout" element={<Layout><Checkout /></Layout>} />
@@ -50,21 +49,21 @@ export default function App() {
                 <Route path="/tienda/:slug/checkout-reserva" element={<Layout><CheckoutReserva /></Layout>} />
                 <Route path="/tienda/:slug/buscar/:termino" element={<Layout><ResultadoBusqueda /></Layout>} />
                 <Route path="/tienda/:slug/empleado/forma-pago" element={<Layout><FormaDePagoEmpleado /></Layout>} />
+                <Route path="/tienda/:slug/historial" element={<Layout><Historial /></Layout>} />
+
                 <Route path="/seleccionar-tienda" element={<SeleccionarTienda />} />
 
-                {/* Panel de administrador */}
                 <Route path="/admin/:slug" element={
                   <PrivateRoute>
                     <Admin />
                   </PrivateRoute>
                 } />
-                <Route path="/admin/pedidos" element={
-                  <PrivateRoute>
+                <Route path="/admin/:slug/pedidos" element={
+                  <PrivateRoute permiteEmpleado>
                     <Pedidos />
                   </PrivateRoute>
                 } />
 
-                {/* Login */}
                 <Route path="/login" element={<Login />} />
               </Routes>
             </Router>

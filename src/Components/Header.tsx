@@ -1,11 +1,11 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useCliente } from "../context/ClienteContext";
 import BarraBusqueda from "./BarraBusqueda";
 import BotonCarritoHeader from "./BotonCarritoHeader";
 import CajaModalEmpleado from "./empleados/CajaModalEmpleado";
 import { useAuth } from "../context/AuthContext";
-import { MdInventory2 } from "react-icons/md";
+import { MdInventory2, MdAssignment, MdAdminPanelSettings } from "react-icons/md";
 
 interface Props {
   logo: string;
@@ -41,11 +41,11 @@ export default function Header({
   const [mostrarMasCategorias, setMostrarMasCategorias] = useState(false);
   const [mostrarCaja, setMostrarCaja] = useState(false);
   const navigate = useNavigate();
-  const { usuario } = useAuth();
+  const { usuario, rol } = useAuth();
+  const userId = localStorage.getItem("userId");
 
   return (
     <div className="header-container" style={{ position: "sticky", top: 0, zIndex: 999, backgroundColor: "#fff" }}>
-      {/* Banner */}
       <div
         style={{
           backgroundImage: `url(${imagenBanner})`,
@@ -95,7 +95,6 @@ export default function Header({
           boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
         }}
       >
-        {/* Categorías */}
         <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
           <span style={{ cursor: "pointer" }} onClick={() => setCategoriaFiltrada?.(null)}>Inicio</span>
           <span style={{ cursor: "pointer" }} onClick={() => setCategoriaFiltrada?.(categoria1)}>{categoria1}</span>
@@ -139,7 +138,6 @@ export default function Header({
           </div>
         </div>
 
-        {/* Redes + Carrito + Caja + Perfil */}
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           {linkFacebook && (
             <a href={linkFacebook} target="_blank" rel="noreferrer" title="Facebook">
@@ -173,14 +171,39 @@ export default function Header({
 
           <BotonCarritoHeader />
 
-          {usuario && (
-            <button
-              onClick={() => setMostrarCaja(true)}
-              style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
-              title="Caja"
-            >
-              <MdInventory2 size={24} />
-            </button>
+          {(rol === "admin" || rol === "empleado") && userId && (
+            <>
+              <button
+                onClick={() => navigate(`/admin/${userId}/pedidos`)}
+                style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                title="Pedidos"
+              >
+                <MdAssignment size={24} />
+              </button>
+
+              <button
+                onClick={() => setMostrarCaja(true)}
+                style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                title="Caja"
+              >
+                <MdInventory2 size={24} />
+              </button>
+
+              {rol === "admin" && (
+                <button
+                  onClick={() => navigate(`/admin/${userId}`)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: 0
+                  }}
+                  title="Modo Admin"
+                >
+                  <MdAdminPanelSettings size={24} color="#3483fa" />
+                </button>
+              )}
+            </>
           )}
 
           {cliente ? (
@@ -224,7 +247,9 @@ export default function Header({
                     zIndex: 999,
                   }}
                 >
-                  <button onClick={() => navigate("/historial")}>🧾 Historial</button>
+                  <button onClick={() => navigate(`/tienda/${userId}/historial`)}>
+                    🧾 Historial
+                  </button>
                   <button onClick={() => navigate("/datos-envio")}>📦 Datos de envío</button>
                   <button onClick={cerrarSesion}>🚪 Cerrar sesión</button>
                 </div>

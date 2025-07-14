@@ -8,9 +8,6 @@ import {
   getDoc,
   writeBatch,
   collection,
-  getDocs,
-  query,
-  where,
   addDoc,
   Timestamp
 } from "firebase/firestore";
@@ -42,19 +39,20 @@ export default function FormaDePago() {
   const [publicKey, setPublicKey] = useState("");
 
   useEffect(() => {
-    if (rol === "empleado") navigate(`/tienda/${slug}/empleado/forma-pago`);
+    if (rol === "empleado" && slug) navigate(`/tienda/${slug}/empleado/forma-pago`);
   }, [rol, navigate, slug]);
 
   useEffect(() => {
     const loadConfig = async () => {
-      const ref = doc(db, "tiendas", slug!);
+      if (!slug) return;
+      const ref = doc(db, "tiendas", slug);
       const snap = await getDoc(ref);
       if (snap.exists()) {
         const data: any = snap.data();
         setPublicKey(data.publicKeyMP || "");
       }
     };
-    if (slug) loadConfig();
+    loadConfig();
   }, [slug]);
 
   useEffect(() => {
@@ -69,58 +67,72 @@ export default function FormaDePago() {
     document.body.appendChild(script);
   }, [publicKey]);
 
-  useEffect(() => {
-    if (rol === "empleado") return;
-    const clienteId = localStorage.getItem("clienteId");
-    const datosAnonimos = localStorage.getItem("datosEnvioAnonimo");
-    if (!clienteId && !datosAnonimos) {
-      Swal.fire(
-        "Faltan datos",
-        "Por favor completá tus datos de envío antes de continuar",
-        "warning"
-      );
-      navigate(`/tienda/${slug}/forma-entrega`);
-    }
-  }, [rol, navigate, slug]);
-
   const total = carrito.reduce((sum, prod) => sum + prod.precio * (prod.cantidad ?? 1), 0);
 
   const descontarStock = async () => {
+    if (!slug) return;
     const batch = writeBatch(db);
-    for (const item of carrito as ProductoCarrito[]) {
-      const prodRef = doc(db, "tiendas", slug!, "productos", item.id);
-      const snap = await getDoc(prodRef);
+    for (const item of carrito) {
+      if (!item.id) continue;
+      const ref = doc(db, "tiendas", slug, "productos", item.id);
+      const snap = await getDoc(ref);
       if (!snap.exists()) continue;
       const data: any = snap.data();
 
       if (item.variante) {
-        const nuevasVariantes = (data.variantes || []).map((v: any) =>
+        const nuevas = (data.variantes || []).map((v: any) =>
           v.nombre === item.variante
-            ? { ...v, stock: Math.max(0, v.stock - (item.cantidad ?? 1)) }
+            ? { ...v, stock: Math.max(0, v.stock - (item.cantidad || 1)) }
             : v
         );
-        batch.update(prodRef, { variantes: nuevasVariantes });
+        batch.update(ref, { variantes: nuevas });
       } else {
-        const nuevoStock = Math.max(0, (data.stock || 0) - (item.cantidad ?? 1));
-        batch.update(prodRef, { stock: nuevoStock });
+        const nuevoStock = Math.max(0, (data.stock || 0) - (item.cantidad || 1));
+        batch.update(ref, { stock: nuevoStock });
       }
     }
     await batch.commit();
   };
 
   const guardarPedido = async () => {
-    const clienteData = JSON.parse(localStorage.getItem("cliente") || "{}");
-    const datosAnonimos = JSON.parse(localStorage.getItem("datosEnvioAnonimo") || "{}");
-    const clienteFinal = clienteData.nombre ? clienteData : datosAnonimos;
+    if (!slug) return;
 
-    await addDoc(collection(db, "tiendas", slug!, "pedidos"), {
-      productos: carrito,
+    const clienteData = JSON.parse(localStorage.getItem("cliente") || "{}");
+    const anonimoData = JSON.parse(localStorage.getItem("datosEnvioAnonimo") || "{}");
+    const clienteFinal = clienteData.nombre ? clienteData : anonimoData;
+
+    const productos = carrito.map((p) => ({
+      id: p.id || "sin-id",
+      nombre: p.nombre || "sin-nombre",
+      cantidad: p.cantidad || 1,
+      precio: p.precio,
+      variante: p.variante || null
+    }));
+
+    const pedido = {
+      productos,
       total,
-      formaPago,
+      formaPago: formaPago || "sin especificar",
       cliente: clienteFinal,
+      clienteUid: usuario?.uid || null,
       estado: "pendiente",
       creado: Timestamp.now()
-    });
+    };
+
+    console.log("📝 Intentando guardar pedido:", pedido);
+
+    try {
+      const docRef = await addDoc(collection(db, "tiendas", slug, "pedidos"), pedido);
+      console.log("✅ Pedido guardado correctamente con ID:", docRef.id);
+    } catch (err) {
+      console.error("❌ Error al guardar pedido en Firebase:", err);
+    }
+  };
+
+  const limpiarLocalStorageCliente = () => {
+    localStorage.removeItem("datosEnvioAnonimo");
+    localStorage.removeItem("cliente");
+    localStorage.removeItem("clienteId");
   };
 
   const finalizar = async () => {
@@ -131,19 +143,15 @@ export default function FormaDePago() {
     if (formaPago === "transferencia") {
       await guardarPedido();
       await descontarStock();
-      Swal.fire("Gracias", "Te enviaremos los datos bancarios por WhatsApp", "info");
       vaciarCarrito();
-      localStorage.removeItem("datosEnvioAnonimo");
+      limpiarLocalStorageCliente();
+      Swal.fire("Gracias", "Te enviaremos los datos bancarios por WhatsApp", "info");
       navigate(`/tienda/${slug}/compra-realizada`);
       return;
     }
 
     if (formaPago === "mercadopago") {
-      Swal.fire({
-        title: "Procesando...",
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
-      });
+      Swal.fire({ title: "Procesando...", didOpen: () => Swal.showLoading(), allowOutsideClick: false });
 
       try {
         const response = await fetch(
@@ -163,11 +171,11 @@ export default function FormaDePago() {
         await guardarPedido();
         await descontarStock();
         vaciarCarrito();
-        localStorage.removeItem("datosEnvioAnonimo");
+        limpiarLocalStorageCliente();
 
         window.location.href = `https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=${data.preferenceId}`;
       } catch (err) {
-        console.error(err);
+        console.error("❌ Error Mercado Pago:", err);
         Swal.fire("Error", "No se pudo procesar el pago", "error");
       } finally {
         Swal.close();
@@ -178,7 +186,6 @@ export default function FormaDePago() {
   return (
     <div style={{ maxWidth: "900px", margin: "auto", padding: "2rem" }}>
       <h2>Elegí tu forma de pago</h2>
-
       <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap" }}>
         <div style={{ flex: 2 }}>
           <label>
@@ -214,7 +221,6 @@ export default function FormaDePago() {
             Finalizar
           </button>
         </div>
-
         <div
           style={{
             flex: 1,
