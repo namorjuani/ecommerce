@@ -5,11 +5,11 @@ import { doc, getDoc } from "firebase/firestore";
 import Header from "../Components/Header";
 import { useTienda } from "../context/TiendaContext";
 
-interface Producto {
+interface Servicio {
   id?: string;
   nombre: string;
-  precio: number;
-  totalServicio?: number;
+  precioReserva?: number;
+  precioTotal?: number;
   descripcion?: string;
 }
 
@@ -17,7 +17,7 @@ export default function AgendarServicio() {
   const { slug, id } = useParams();
   const navigate = useNavigate();
   const tienda = useTienda();
-  const [producto, setProducto] = useState<Producto | null>(null);
+  const [servicio, setServicio] = useState<Servicio | null>(null);
   const [numeroWhatsapp, setNumeroWhatsapp] = useState<string | null>(null);
 
   useEffect(() => {
@@ -25,10 +25,11 @@ export default function AgendarServicio() {
 
     const cargarDatos = async () => {
       try {
-        const prodRef = doc(db, "tiendas", slug, "productos", id);
-        const prodSnap = await getDoc(prodRef);
-        if (prodSnap.exists()) {
-          setProducto({ ...(prodSnap.data() as Producto), id });
+        const servicioRef = doc(db, "tiendas", slug, "servicios", id);
+        const servicioSnap = await getDoc(servicioRef);
+
+        if (servicioSnap.exists()) {
+          setServicio({ ...(servicioSnap.data() as Servicio), id });
         }
 
         const tiendaRef = doc(db, "tiendas", slug);
@@ -37,9 +38,9 @@ export default function AgendarServicio() {
           const data = tiendaSnap.data();
           const wpp = data.whatsappReservas || data.whatsapp || null;
           setNumeroWhatsapp(wpp);
-          
-          if (wpp && prodSnap.exists()) {
-            const mensaje = `Hola, quiero reservar un turno para el servicio: ${prodSnap.data().nombre}`;
+
+          if (wpp && servicioSnap.exists()) {
+            const mensaje = `Hola, quiero reservar un turno para el servicio: ${servicioSnap.data().nombre}`;
             const url = `https://wa.me/${wpp.replace(/\D/g, "")}?text=${encodeURIComponent(mensaje)}`;
             window.open(url, "_blank");
           }
@@ -52,7 +53,7 @@ export default function AgendarServicio() {
     cargarDatos();
   }, [slug, id]);
 
-  if (!producto || !tienda) {
+  if (!servicio || !tienda) {
     return <p style={{ textAlign: "center", marginTop: "2rem" }}>Cargando servicio...</p>;
   }
 
@@ -74,15 +75,15 @@ export default function AgendarServicio() {
       />
 
       <div style={{ maxWidth: "700px", margin: "2rem auto", padding: "1rem" }}>
-        <h2>{producto.nombre}</h2>
-        {producto.descripcion && <p>{producto.descripcion}</p>}
+        <h2>{servicio.nombre}</h2>
+        {servicio.descripcion && <p>{servicio.descripcion}</p>}
 
         <p style={{ marginTop: "1rem" }}>
-          <strong>Precio de reserva:</strong> ${producto.precio}
+          <strong>Precio de reserva:</strong> ${servicio.precioReserva || 0}
         </p>
-        {producto.totalServicio && (
+        {servicio.precioTotal && (
           <p style={{ color: "#555" }}>
-            Precio total del servicio: ${producto.totalServicio}
+            Precio total del servicio: ${servicio.precioTotal}
           </p>
         )}
 

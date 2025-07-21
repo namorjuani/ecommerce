@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { db } from "../../firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import Swal from "sweetalert2";
+import AdminEnvios from "./AdminEnvios";
 
 
 // Componentes por sección
@@ -64,27 +65,29 @@ export default function Admin() {
       </div>
 
       <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem", borderBottom: "1px solid #ccc", paddingBottom: "1rem" }}>
-        {["productos", "reservas", "empleados", "cajas", "estetica", "notificaciones", "pagos", "ayuda"].map((sec) => (
-          <button
-            key={sec}
-            onClick={() => setSeccionActiva(sec)}
-            style={{
-              backgroundColor: seccionActiva === sec ? "#3483fa" : "#eee",
-              color: seccionActiva === sec ? "#fff" : "#000",
-              padding: "0.5rem 1rem",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-            }}
-          >
-            {sec.charAt(0).toUpperCase() + sec.slice(1)}
-          </button>
-        ))}
+        {["productos", "reservas", "empleados", "cajas", "estetica", "notificaciones", "pagos", "envios", "ayuda"].map((sec) => (
+  <button
+    key={sec}
+    onClick={() => setSeccionActiva(sec)}
+    style={{
+      backgroundColor: seccionActiva === sec ? "#3483fa" : "#eee",
+      color: seccionActiva === sec ? "#fff" : "#000",
+      padding: "0.5rem 1rem",
+      border: "none",
+      borderRadius: "6px",
+      cursor: "pointer",
+    }}
+  >
+    {sec.charAt(0).toUpperCase() + sec.slice(1)}
+  </button>
+))}
+
       </div>
 
       {seccionActiva === "productos" && <ProductosAdmin slug={slug!} />}
       {seccionActiva === "reservas" && <ReservasAdmin slug={slug!} />}
       {seccionActiva === "empleados" && <EmpleadosAdmin slug={slug!} />}
+      {seccionActiva === "envios" && <AdminEnvios slug={slug!} />}
       {seccionActiva === "cajas" && <ResumenCajasAdmin slug={slug!} />}
       {seccionActiva === "estetica" && (
         <EsteticaGeneral

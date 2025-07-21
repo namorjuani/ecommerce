@@ -3,6 +3,7 @@ import Papa from "papaparse";
 import { collection, addDoc, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
+import { checkLimits } from "../../functions/src/utils/checkLimits";
 
 interface VarianteCSV {
     nombre: string;
@@ -14,24 +15,23 @@ interface ProductoCSV {
     nombre: string;
     precio: number;
     imagen?: string;
-    otrasImagenes?: string; // Coma separadas
+    otrasImagenes?: string;
     descripcionCorta?: string;
     descripcionLarga?: string;
     cuotas?: string;
-    envioGratis?: string; // "si" | "no"
+    envioGratis?: string;
     color?: string;
     stock: number;
     categoria?: string;
     tipo?: "producto" | "servicio";
-    variantes?: string; // JSON string: [{"nombre":"Talle S", "stock":10}]
+    variantes?: string;
 }
 
 interface Props {
-    limite: number;
     slug: string;
 }
 
-export default function ImportadorCSV({ limite, slug }: Props) {
+export default function ImportadorCSV({ slug }: Props) {
     const { usuario } = useAuth();
     const [csvInfo, setCsvInfo] = useState<string>("");
 
@@ -46,12 +46,25 @@ export default function ImportadorCSV({ limite, slug }: Props) {
             complete: async (resultado: Papa.ParseResult<ProductoCSV>) => {
                 const data = resultado.data;
 
+                const result = await checkLimits(slug);
+
+                if (!result.allowed) {
+                    setCsvInfo(`⛔ No podés cargar más productos: ${result.reason}`);
+                    return;
+                }
+
                 const productosRef = collection(db, "tiendas", slug, "productos");
                 const snapshot = await getDocs(productosRef);
                 const cantidadActual = snapshot.size;
 
-                if (cantidadActual + data.length > limite) {
-                    setCsvInfo(`⛔ Límite excedido. Tenés ${cantidadActual} y estás intentando agregar ${data.length}. Máx: ${limite}`);
+                const serviciosRef = collection(db, `tiendas/${slug}/servicios`);
+                const serviciosSnapshot = await getDocs(serviciosRef);
+                const cantidadServicios = serviciosSnapshot.size;
+
+                const totalActual = cantidadActual + cantidadServicios;
+
+                if (result.limiteTotal !== null && totalActual + data.length > result.limiteTotal) {
+                    setCsvInfo(`⛔ Estás intentando cargar ${data.length} productos pero ya tenés ${totalActual}. El máximo es ${result.limiteTotal}.`);
                     return;
                 }
 

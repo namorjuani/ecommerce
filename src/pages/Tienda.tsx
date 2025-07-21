@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { db } from "../firebase";
-import { doc, getDoc, collection, query, getDocs } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import CarruselPorCategoria from "../Components/CarruselPorCategoria";
 import CategoriasDestacadas from "../Components/CategoriasDestacadas";
 import UbicacionTienda from "../Components/UbicacionTienda";
@@ -24,6 +24,7 @@ interface Producto {
 export default function Tienda() {
   const { slug } = useParams();
   const [productos, setProductos] = useState<Producto[]>([]);
+  const [servicios, setServicios] = useState<Producto[]>([]);
   const [tienda, setTienda] = useState<any>(null);
   const [categoriaFiltrada, setCategoriaFiltrada] = useState<string | null>(null);
 
@@ -40,28 +41,46 @@ export default function Tienda() {
 
     const cargarProductos = async () => {
       const productosRef = collection(db, "tiendas", slug, "productos");
-      const q = query(productosRef);
-      const querySnapshot = await getDocs(q);
-      const productosData: Producto[] = querySnapshot.docs.map((doc) => ({
+      const productosSnap = await getDocs(productosRef);
+      const productosData: Producto[] = productosSnap.docs.map((doc) => ({
         ...(doc.data() as Producto),
         id: doc.id,
+        tipo: "producto",
       }));
-
-      const catGuardada = localStorage.getItem("categoriaSeleccionada");
-      if (catGuardada) {
-        setCategoriaFiltrada(catGuardada);
-        localStorage.removeItem("categoriaSeleccionada");
-      }
-
       setProductos(productosData);
     };
 
+    const cargarServicios = async () => {
+      const serviciosRef = collection(db, "tiendas", slug, "servicios");
+      const serviciosSnap = await getDocs(serviciosRef);
+      const serviciosData: Producto[] = serviciosSnap.docs.map((doc) => ({
+        ...(doc.data() as Producto),
+        id: doc.id,
+        tipo: "servicio",
+      }));
+      setServicios(serviciosData);
+    };
+
+    const catGuardada = localStorage.getItem("categoriaSeleccionada");
+    if (catGuardada) {
+      setCategoriaFiltrada(catGuardada);
+      localStorage.removeItem("categoriaSeleccionada");
+    }
+
     cargarTienda();
     cargarProductos();
+    cargarServicios();
   }, [slug]);
 
-  const categoriasExtras = Array.from(new Set(productos.map((p) => p.categoria)))
-    .filter((cat) => cat !== tienda?.categoriaDestacada1 && cat !== tienda?.categoriaDestacada2);
+  const categoriasUnificadas = [...productos, ...servicios];
+
+  const categoriasExtras = Array.from(
+    new Set(categoriasUnificadas.map((p) => p.categoria))
+  ).filter(
+    (cat) =>
+      cat !== tienda?.categoriaDestacada1 &&
+      cat !== tienda?.categoriaDestacada2
+  );
 
   return (
     <>
@@ -89,29 +108,61 @@ export default function Tienda() {
       >
         <CategoriasDestacadas />
 
-        <div className="productos">
-          <h2 style={{ fontSize: tienda?.estilosTexto?.tamañoH2 || "24px" }}>
-            Productos por categoría
-          </h2>
-          {Object.entries(
-            productos.reduce((acc: { [cat: string]: Producto[] }, prod) => {
-              const cat = prod.categoria || "Sin categoría";
-              acc[cat] = acc[cat] || [];
-              acc[cat].push(prod);
-              return acc;
-            }, {})
-          )
-            .filter(([cat]) => !categoriaFiltrada || cat === categoriaFiltrada)
-            .map(([categoria, productosCat], i) => (
-              <CarruselPorCategoria
-                key={categoria}
-                categoria={categoria}
-                productos={productosCat}
-                carruselId={`carrusel-${i}`}
-                  slug={slug!}
-              />
-            ))}
-        </div>
+        {(productos.length > 0 || servicios.length > 0) && (
+          <div className="productos">
+            {productos.length > 0 && (
+              <>
+                <h2 style={{ fontSize: tienda?.estilosTexto?.tamañoH2 || "24px" }}>
+                  Productos por categoría
+                </h2>
+                {Object.entries(
+                  productos.reduce((acc: { [cat: string]: Producto[] }, prod) => {
+                    const cat = prod.categoria || "Sin categoría";
+                    acc[cat] = acc[cat] || [];
+                    acc[cat].push(prod);
+                    return acc;
+                  }, {})
+                )
+                  .filter(([cat]) => !categoriaFiltrada || cat === categoriaFiltrada)
+                  .map(([categoria, productosCat], i) => (
+                    <CarruselPorCategoria
+                      key={`prod-${categoria}`}
+                      categoria={categoria}
+                      productos={productosCat}
+                      carruselId={`carrusel-prod-${i}`}
+                      slug={slug!}
+                    />
+                  ))}
+              </>
+            )}
+
+            {servicios.length > 0 && (
+              <>
+                <h2 style={{ fontSize: tienda?.estilosTexto?.tamañoH2 || "24px" }}>
+                  Servicios por categoría
+                </h2>
+                {Object.entries(
+                  servicios.reduce((acc: { [cat: string]: Producto[] }, prod) => {
+                    const cat = prod.categoria || "Sin categoría";
+                    acc[cat] = acc[cat] || [];
+                    acc[cat].push(prod);
+                    return acc;
+                  }, {})
+                )
+                  .filter(([cat]) => !categoriaFiltrada || cat === categoriaFiltrada)
+                  .map(([categoria, serviciosCat], i) => (
+                    <CarruselPorCategoria
+                      key={`serv-${categoria}`}
+                      categoria={categoria}
+                      productos={serviciosCat}
+                      carruselId={`carrusel-serv-${i}`}
+                      slug={slug!}
+                    />
+                  ))}
+              </>
+            )}
+          </div>
+        )}
 
         <UbicacionTienda
           googleMaps={tienda?.googleMaps || ""}
@@ -129,8 +180,6 @@ export default function Tienda() {
           </a>
         )}
       </div>
-
-
     </>
   );
 }

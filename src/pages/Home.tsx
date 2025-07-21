@@ -1,14 +1,12 @@
 import { useEffect, useState } from "react";
 import { db } from "../firebase";
-import { doc, getDoc, collection, query, getDocs } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import CarruselPorCategoria from "../Components/CarruselPorCategoria";
 import CategoriasDestacadas from "../Components/CategoriasDestacadas";
 import UbicacionTienda from "../Components/UbicacionTienda";
 import Header from "../Components/Header";
-import { useAuth } from "../context/AuthContext";
-import { useCliente } from "../context/ClienteContext";
-import "./css/Home.css";
 import { useParams } from "react-router-dom";
+import "./css/Home.css";
 
 interface Producto {
   id: string;
@@ -26,6 +24,7 @@ export default function Home() {
   const [nombre, setNombre] = useState("Mi tienda");
   const [imagen, setImagen] = useState("");
   const [productos, setProductos] = useState<Producto[]>([]);
+  const [servicios, setServicios] = useState<Producto[]>([]);
   const [whatsapp, setWhatsapp] = useState("");
   const [alturaBanner, setAlturaBanner] = useState("100px");
   const [posicionBanner, setPosicionBanner] = useState("center");
@@ -44,7 +43,6 @@ export default function Home() {
     const cargarTienda = async () => {
       if (!slug) return;
 
-      // Guardamos el slug como userId para otras partes de la app que usan localStorage
       localStorage.setItem("userId", slug);
 
       const docRef = doc(db, "tiendas", slug);
@@ -67,11 +65,23 @@ export default function Home() {
       }
 
       const productosRef = collection(db, "tiendas", slug, "productos");
-      const q = query(productosRef);
-      const querySnapshot = await getDocs(q);
-      const productosData: Producto[] = querySnapshot.docs.map((doc) => ({
+      const serviciosRef = collection(db, "tiendas", slug, "servicios");
+
+      const [productosSnap, serviciosSnap] = await Promise.all([
+        getDocs(productosRef),
+        getDocs(serviciosRef),
+      ]);
+
+      const productosData: Producto[] = productosSnap.docs.map((doc) => ({
         ...(doc.data() as Producto),
         id: doc.id,
+        tipo: "producto",
+      }));
+
+      const serviciosData: Producto[] = serviciosSnap.docs.map((doc) => ({
+        ...(doc.data() as Producto),
+        id: doc.id,
+        tipo: "servicio",
       }));
 
       const catGuardada = localStorage.getItem("categoriaSeleccionada");
@@ -81,13 +91,16 @@ export default function Home() {
       }
 
       setProductos(productosData);
+      setServicios(serviciosData);
     };
 
     cargarTienda();
   }, [slug]);
 
-  const categoriasExtras = Array.from(new Set(productos.map((p) => p.categoria)))
+  const categoriasExtrasProductos = Array.from(new Set(productos.map((p) => p.categoria)))
     .filter((cat) => cat !== cat1 && cat !== cat2);
+
+  const categoriasExtrasServicios = Array.from(new Set(servicios.map((s) => s.categoria)));
 
   return (
     <>
@@ -100,7 +113,7 @@ export default function Home() {
         tamañoBanner={tamañoBanner}
         categoria1={cat1}
         categoria2={cat2}
-        categoriasExtras={categoriasExtras}
+        categoriasExtras={categoriasExtrasProductos}
         setCategoriaFiltrada={setCategoriaFiltrada}
         linkInstagram={linkInstagram}
         linkFacebook={linkFacebook}
@@ -133,7 +146,31 @@ export default function Home() {
                 key={categoria}
                 categoria={categoria}
                 productos={productosCat}
-                carruselId={`carrusel-${i}`}
+                carruselId={`carrusel-productos-${i}`}
+                slug={slug!}
+              />
+            ))}
+        </div>
+
+        <div className="productos">
+          <h2 style={{ fontSize: tienda?.estilosTexto?.tamañoH2 || "24px", marginTop: "3rem" }}>
+            Servicios por categoría
+          </h2>
+          {Object.entries(
+            servicios.reduce((acc: { [cat: string]: Producto[] }, serv) => {
+              const cat = serv.categoria || "Sin categoría";
+              acc[cat] = acc[cat] || [];
+              acc[cat].push(serv);
+              return acc;
+            }, {})
+          )
+            .filter(([cat]) => !categoriaFiltrada || cat === categoriaFiltrada)
+            .map(([categoria, serviciosCat], i) => (
+              <CarruselPorCategoria
+                key={categoria}
+                categoria={categoria}
+                productos={serviciosCat}
+                carruselId={`carrusel-servicios-${i}`}
                 slug={slug!}
               />
             ))}

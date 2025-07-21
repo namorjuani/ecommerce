@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { db } from "../../firebase";
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc, getDocs } from "firebase/firestore";
 import ImportadorCSV from "../../pages/ImportadorCSV";
 import ModificarProductos from "../../pages/ModificarProductos";
-
+import { checkLimits } from "../../../functions/src/utils/checkLimits";
 
 interface Producto {
     id?: string;
@@ -28,8 +28,10 @@ interface Producto {
     precioTotal?: number;
     codigoBarras?: string;
 }
+
 export default function AdminProductos({ slug }: { slug: string }) {
     const { usuario } = useAuth();
+
     const [nuevo, setNuevo] = useState<Producto>({
         nombre: "",
         precio: 0,
@@ -48,11 +50,41 @@ export default function AdminProductos({ slug }: { slug: string }) {
         precioTotal: 0,
     });
 
-    const guardarProductoNuevo = async () => {
+    const [almacenamiento, setAlmacenamiento] = useState<{ productos: number, servicios: number, total: number, limite: number | null }>({
+        productos: 0,
+        servicios: 0,
+        total: 0,
+        limite: null,
+    });
+
+    const obtenerAlmacenamiento = async () => {
+        const result = await checkLimits(slug);
+        const productosSnap = await getDocs(collection(db, `tiendas/${slug}/productos`));
+        const serviciosSnap = await getDocs(collection(db, `tiendas/${slug}/servicios`));
+        const productos = productosSnap.size;
+        const servicios = serviciosSnap.size;
+        const total = productos + servicios;
+        const limite = result.limiteTotal === 0 ? null : result.limiteTotal;
+        setAlmacenamiento({ productos, servicios, total, limite });
+    };
+
+    useEffect(() => {
+        obtenerAlmacenamiento();
+    }, []);
+
+    const guardarNuevoItem = async () => {
         if (!usuario) return;
-        const ref = collection(db, "tiendas", slug, "productos");
+        const result = await checkLimits(slug);
+        if (!result.allowed) {
+            alert(result.reason);
+            return;
+        }
+
+        const ref = collection(db, "tiendas", slug, nuevo.tipo === "producto" ? "productos" : "servicios");
         await addDoc(ref, nuevo);
-        alert("Producto agregado");
+        await obtenerAlmacenamiento();
+        alert(`${nuevo.tipo === "producto" ? "Producto" : "Servicio"} agregado`);
+
         setNuevo({
             nombre: "",
             precio: 0,
@@ -74,43 +106,49 @@ export default function AdminProductos({ slug }: { slug: string }) {
 
     return (
         <>
-            <ImportadorCSV limite={50} slug={slug} />
-            <h3>Agregar producto nuevo</h3>
+            <div style={{ marginBottom: "2rem", padding: "1rem", border: "1px solid #ccc", borderRadius: "8px", backgroundColor: "#f8f8f8" }}>
+                <h4>🗄️ Almacenamiento usado</h4>
+                <p>Productos: <strong>{almacenamiento.productos}</strong></p>
+                <p>Servicios: <strong>{almacenamiento.servicios}</strong></p>
+                <p>Total: <strong>{almacenamiento.total}</strong> / {almacenamiento.limite !== null ? almacenamiento.limite : "Ilimitado"}</p>
+                {almacenamiento.limite !== null && (
+                    <div style={{ background: "#ddd", borderRadius: "6px", overflow: "hidden", height: "10px", marginTop: "0.5rem" }}>
+                        <div style={{
+                            width: `${(almacenamiento.total / almacenamiento.limite) * 100}%`,
+                            background: "#3483fa",
+                            height: "10px",
+                            transition: "width 0.3s"
+                        }} />
+                    </div>
+                )}
+            </div>
+
+            <ImportadorCSV slug={slug} />
+
+            <h3>Agregar un nuevo producto o servicio</h3>
+            <p style={{ fontSize: "0.9rem", color: "#666", marginBottom: "1rem" }}>
+                Los productos y servicios se almacenan en sus respectivas listas.
+            </p>
+
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "2rem" }}>
                 <label>Código de barras (opcional):
-                    <input
-                        type="text"
-                        value={nuevo.codigoBarras || ""}
-                        onChange={(e) => setNuevo({ ...nuevo, codigoBarras: e.target.value })}
-                    />
+                    <input type="text" value={nuevo.codigoBarras || ""} onChange={(e) => setNuevo({ ...nuevo, codigoBarras: e.target.value })} />
                 </label>
                 <label>Nombre
                     <input value={nuevo.nombre} onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })} />
                 </label>
                 {nuevo.tipo === "producto" && (
                     <label>Precio
-                        <input
-                            type="number"
-                            value={nuevo.precio}
-                            onChange={(e) => setNuevo({ ...nuevo, precio: Number(e.target.value) })}
-                        />
+                        <input type="number" value={nuevo.precio} onChange={(e) => setNuevo({ ...nuevo, precio: Number(e.target.value) })} />
                     </label>
                 )}
                 {nuevo.tipo === "servicio" && (
                     <>
                         <label>Precio de reserva
-                            <input
-                                type="number"
-                                value={nuevo.precioReserva || 0}
-                                onChange={(e) => setNuevo({ ...nuevo, precioReserva: Number(e.target.value) })}
-                            />
+                            <input type="number" value={nuevo.precioReserva || 0} onChange={(e) => setNuevo({ ...nuevo, precioReserva: Number(e.target.value) })} />
                         </label>
                         <label>Precio total del servicio
-                            <input
-                                type="number"
-                                value={nuevo.precioTotal || 0}
-                                onChange={(e) => setNuevo({ ...nuevo, precioTotal: Number(e.target.value) })}
-                            />
+                            <input type="number" value={nuevo.precioTotal || 0} onChange={(e) => setNuevo({ ...nuevo, precioTotal: Number(e.target.value) })} />
                         </label>
                     </>
                 )}
@@ -118,10 +156,7 @@ export default function AdminProductos({ slug }: { slug: string }) {
                     <input value={nuevo.imagen} onChange={(e) => setNuevo({ ...nuevo, imagen: e.target.value })} />
                 </label>
                 <label>Otras imágenes (separar URLs con coma)
-                    <input
-                        value={nuevo.imagenes?.join(",") || ""}
-                        onChange={(e) => setNuevo({ ...nuevo, imagenes: e.target.value.split(",") })}
-                    />
+                    <input value={nuevo.imagenes?.join(",") || ""} onChange={(e) => setNuevo({ ...nuevo, imagenes: e.target.value.split(",") })} />
                 </label>
                 <label>Descripción larga
                     <textarea value={nuevo.descripcion} onChange={(e) => setNuevo({ ...nuevo, descripcion: e.target.value })} />
@@ -133,21 +168,13 @@ export default function AdminProductos({ slug }: { slug: string }) {
                     <input value={nuevo.cuotas} onChange={(e) => setNuevo({ ...nuevo, cuotas: e.target.value })} />
                 </label>
                 <label>Envío gratis
-                    <input
-                        type="checkbox"
-                        checked={nuevo.envioGratis}
-                        onChange={(e) => setNuevo({ ...nuevo, envioGratis: e.target.checked })}
-                    />
+                    <input type="checkbox" checked={nuevo.envioGratis} onChange={(e) => setNuevo({ ...nuevo, envioGratis: e.target.checked })} />
                 </label>
                 <label>Color
                     <input value={nuevo.color} onChange={(e) => setNuevo({ ...nuevo, color: e.target.value })} />
                 </label>
                 <label>Stock base
-                    <input
-                        type="number"
-                        value={nuevo.stock}
-                        onChange={(e) => setNuevo({ ...nuevo, stock: Number(e.target.value) })}
-                    />
+                    <input type="number" value={nuevo.stock} onChange={(e) => setNuevo({ ...nuevo, stock: Number(e.target.value) })} />
                 </label>
                 <label>Categoría
                     <input value={nuevo.categoria} onChange={(e) => setNuevo({ ...nuevo, categoria: e.target.value })} />
@@ -184,7 +211,6 @@ export default function AdminProductos({ slug }: { slug: string }) {
                         ➕ Añadir variante
                     </button>
                 </div>
-
                 {(nuevo.variantes && nuevo.variantes.length > 0) ? (
                     <ul>
                         {nuevo.variantes.map((v, i) => (
@@ -209,10 +235,10 @@ export default function AdminProductos({ slug }: { slug: string }) {
             </div>
 
             <button
-                onClick={guardarProductoNuevo}
+                onClick={guardarNuevoItem}
                 style={{ marginBottom: "2rem", backgroundColor: "#3483fa", color: "white", border: "none", padding: "0.6rem 1.5rem", borderRadius: "6px", cursor: "pointer" }}
             >
-                ➕ Agregar producto
+                ➕ Agregar {nuevo.tipo === "producto" ? "producto" : "servicio"}
             </button>
 
             <ModificarProductos slug={slug} />

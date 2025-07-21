@@ -19,17 +19,6 @@ declare global {
   }
 }
 
-interface ProductoCarrito {
-  id: string;
-  nombre: string;
-  precio: number;
-  imagen: string;
-  stock: number;
-  tipo: "producto" | "servicio";
-  cantidad?: number;
-  variante?: string;
-}
-
 export default function FormaDePago() {
   const [formaPago, setFormaPago] = useState("");
   const navigate = useNavigate();
@@ -37,6 +26,8 @@ export default function FormaDePago() {
   const { carrito, vaciarCarrito } = useCarrito();
   const { usuario, rol } = useAuth();
   const [publicKey, setPublicKey] = useState("");
+
+  const costoEnvio = Number(localStorage.getItem("costoExtraEnvio") || 0);
 
   useEffect(() => {
     if (rol === "empleado" && slug) navigate(`/tienda/${slug}/empleado/forma-pago`);
@@ -67,7 +58,8 @@ export default function FormaDePago() {
     document.body.appendChild(script);
   }, [publicKey]);
 
-  const total = carrito.reduce((sum, prod) => sum + prod.precio * (prod.cantidad ?? 1), 0);
+  const totalProductos = carrito.reduce((sum, prod) => sum + prod.precio * (prod.cantidad ?? 1), 0);
+  const totalFinal = totalProductos + costoEnvio;
 
   const descontarStock = async () => {
     if (!slug) return;
@@ -111,7 +103,7 @@ export default function FormaDePago() {
 
     const pedido = {
       productos,
-      total,
+      total: totalFinal,
       formaPago: formaPago || "sin especificar",
       cliente: clienteFinal,
       clienteUid: usuario?.uid || null,
@@ -119,7 +111,7 @@ export default function FormaDePago() {
       creado: Timestamp.now()
     };
 
-    console.log("📝 Intentando guardar pedido:", pedido);
+    console.log("📝 Guardando pedido:", pedido);
 
     try {
       const docRef = await addDoc(collection(db, "tiendas", slug, "pedidos"), pedido);
@@ -246,7 +238,9 @@ export default function FormaDePago() {
               <span>{prod.nombre}</span>
             </div>
           ))}
-          <p style={{ fontWeight: "bold" }}>Total: ${total}</p>
+          <p style={{ fontWeight: "bold" }}>Productos: ${totalProductos}</p>
+          <p style={{ fontWeight: "bold" }}>Envío: ${costoEnvio}</p>
+          <p style={{ fontWeight: "bold", marginTop: "0.5rem" }}>Total: ${totalFinal}</p>
         </div>
       </div>
     </div>

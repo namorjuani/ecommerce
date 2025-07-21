@@ -45,14 +45,20 @@ export default function ProductDetail() {
       if (!slug || !id) return;
 
       try {
-        const productoRef = doc(db, "tiendas", slug, "productos", id);
-        const productoSnap = await getDoc(productoRef);
+        let productoSnap = await getDoc(doc(db, "tiendas", slug, "productos", id));
+        let tipo: "producto" | "servicio" = "producto";
+
+        if (!productoSnap.exists()) {
+          productoSnap = await getDoc(doc(db, "tiendas", slug, "servicios", id));
+          tipo = "servicio";
+        }
+
         if (productoSnap.exists()) {
           const data = productoSnap.data() as Producto;
-          setProducto({ ...data, id });
+          setProducto({ ...data, id, tipo });
           setImagenPrincipal(data.imagen);
         } else {
-          console.warn("Producto no encontrado");
+          console.warn("Producto o servicio no encontrado");
         }
 
         const productosRef = collection(db, "tiendas", slug, "productos");
@@ -117,8 +123,6 @@ export default function ProductDetail() {
           linkFacebook={tienda.linkFacebook}
         />
       )}
-
-
 
       <div
         style={{

@@ -19,28 +19,39 @@ interface Producto {
 
 export default function ResultadoBusqueda() {
   const { termino, slug } = useParams<{ termino: string; slug: string }>();
-  const [productos, setProductos] = useState<Producto[]>([]);
+  const [items, setItems] = useState<Producto[]>([]);
 
   useEffect(() => {
-    const fetchProductos = async () => {
+    const fetchProductosYServicios = async () => {
       const tiendaId = slug || localStorage.getItem("userId") || "default";
-      const snapshot = await getDocs(
-        collection(db, "tiendas", tiendaId, "productos")
-      );
-      const data: Producto[] = snapshot.docs.map((doc) => ({
+
+      const [productosSnap, serviciosSnap] = await Promise.all([
+        getDocs(collection(db, "tiendas", tiendaId, "productos")),
+        getDocs(collection(db, "tiendas", tiendaId, "servicios")),
+      ]);
+
+      const productos: Producto[] = productosSnap.docs.map((doc) => ({
         ...(doc.data() as Producto),
         id: doc.id,
+        tipo: "producto",
       }));
-      setProductos(data);
+
+      const servicios: Producto[] = serviciosSnap.docs.map((doc) => ({
+        ...(doc.data() as Producto),
+        id: doc.id,
+        tipo: "servicio",
+      }));
+
+      setItems([...productos, ...servicios]);
     };
 
-    fetchProductos();
+    fetchProductosYServicios();
   }, [slug]);
 
-  const resultados = productos.filter(
-    (producto) =>
-      producto.nombre.toLowerCase().includes(termino?.toLowerCase() || "") ||
-      producto.codigoBarras?.includes(termino || "")
+  const resultados = items.filter(
+    (item) =>
+      item.nombre.toLowerCase().includes(termino?.toLowerCase() || "") ||
+      item.codigoBarras?.includes(termino || "")
   );
 
   return (
@@ -55,10 +66,10 @@ export default function ResultadoBusqueda() {
             justifyContent: "center",
           }}
         >
-          {resultados.map((producto) => (
+          {resultados.map((item) => (
             <Link
-              to={`/tienda/${slug}/producto/${producto.id}`}
-              key={producto.id}
+              to={`/tienda/${slug}/producto/${item.id}`}
+              key={item.id}
               style={{
                 border: "1px solid #ccc",
                 borderRadius: "8px",
@@ -70,8 +81,8 @@ export default function ResultadoBusqueda() {
               }}
             >
               <img
-                src={producto.imagen || "/imagen-default.jpg"}
-                alt={producto.nombre}
+                src={item.imagen || "/imagen-default.jpg"}
+                alt={item.nombre}
                 onError={(e) => (e.currentTarget.src = "/imagen-default.jpg")}
                 style={{
                   width: "100%",
@@ -82,10 +93,25 @@ export default function ResultadoBusqueda() {
                 }}
               />
               <h3 style={{ fontSize: "1rem", margin: "0.3rem 0" }}>
-                {producto.nombre}
+                {item.nombre}
               </h3>
-              <p style={{ fontWeight: "bold" }}>${producto.precio}</p>
-              {producto.envioGratis && (
+              {item.tipo === "producto" ? (
+                <p style={{ fontWeight: "bold" }}>${item.precio}</p>
+              ) : (
+                <div style={{ fontSize: "0.9rem", lineHeight: "1.4" }}>
+                  {item.precioReserva !== undefined && (
+                    <p style={{ margin: 0 }}>
+                      Reserva: <strong>${item.precioReserva}</strong>
+                    </p>
+                  )}
+                  {item.precioTotal !== undefined && (
+                    <p style={{ margin: 0 }}>
+                      Total: <strong>${item.precioTotal}</strong>
+                    </p>
+                  )}
+                </div>
+              )}
+              {item.envioGratis && (
                 <p style={{ color: "green", fontSize: "0.85rem" }}>
                   Envío gratis
                 </p>
@@ -94,7 +120,7 @@ export default function ResultadoBusqueda() {
           ))}
         </div>
       ) : (
-        <p>No se encontraron productos.</p>
+        <p>No se encontraron resultados.</p>
       )}
     </div>
   );

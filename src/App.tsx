@@ -26,47 +26,58 @@ import Planes from "./dominios/Planes";
 import SeleccionarTienda from "./dominios/SeleccionarTienda";
 import Historial from "./pages/Historial";
 
+// ✅ Super Admin Context para PIN privado
+import { SuperAdminProvider } from "./context/SuperAdminContext";
+import EstadisticasTiendas from "./adminSistema/pages/EstadisticasTiendas";
+import CuponesDescuento from "./adminSistema/pages/CuponesDescuentos";
+
 export default function App() {
   return (
     <AuthProvider>
       <ClienteProvider>
         <CarritoProvider>
           <TiendaProvider>
-            <Router>
-              <Routes>
-                <Route path="/" element={<Landing />} />
-                <Route path="/planes" element={<Planes />} />
-                <Route path="/gracias" element={<Gracias />} />
+            <SuperAdminProvider>
+              <Router>
+                <Routes>
+                  <Route path="/" element={<Landing />} />
+                  <Route path="/planes" element={<Planes />} />
+                  <Route path="/gracias" element={<Gracias />} />
 
-                <Route path="/tienda/:slug" element={<Layout><Tienda /></Layout>} />
-                <Route path="/tienda/:slug/producto/:id" element={<Layout><ProductDetail /></Layout>} />
-                <Route path="/tienda/:slug/checkout" element={<Layout><Checkout /></Layout>} />
-                <Route path="/tienda/:slug/forma-entrega" element={<Layout><FormaEntrega /></Layout>} />
-                <Route path="/tienda/:slug/forma-pago" element={<Layout><FormaDePago /></Layout>} />
-                <Route path="/tienda/:slug/compra-realizada" element={<Layout><CompraRealizada /></Layout>} />
-                <Route path="/tienda/:slug/datos-envio" element={<Layout><DatosEnvio /></Layout>} />
-                <Route path="/tienda/:slug/agendar-servicio/:id" element={<Layout><AgendarServicio /></Layout>} />
-                <Route path="/tienda/:slug/checkout-reserva" element={<Layout><CheckoutReserva /></Layout>} />
-                <Route path="/tienda/:slug/buscar/:termino" element={<Layout><ResultadoBusqueda /></Layout>} />
-                <Route path="/tienda/:slug/empleado/forma-pago" element={<Layout><FormaDePagoEmpleado /></Layout>} />
-                <Route path="/tienda/:slug/historial" element={<Layout><Historial /></Layout>} />
+                  <Route path="/tienda/:slug" element={<Layout><Tienda /></Layout>} />
+                  <Route path="/tienda/:slug/producto/:id" element={<Layout><ProductDetail /></Layout>} />
+                  <Route path="/tienda/:slug/servicio/:id" element={<Layout><ProductDetail /></Layout>} />
+                  <Route path="/tienda/:slug/checkout" element={<Layout><Checkout /></Layout>} />
+                  <Route path="/tienda/:slug/forma-entrega" element={<Layout><FormaEntrega /></Layout>} />
+                  <Route path="/tienda/:slug/forma-pago" element={<Layout><FormaDePago /></Layout>} />
+                  <Route path="/tienda/:slug/compra-realizada" element={<Layout><CompraRealizada /></Layout>} />
+                  <Route path="/tienda/:slug/datos-envio" element={<Layout><DatosEnvio /></Layout>} />
+                  <Route path="/tienda/:slug/agendar-servicio/:id" element={<Layout><AgendarServicio /></Layout>} />
+                  <Route path="/tienda/:slug/checkout-reserva" element={<Layout><CheckoutReserva /></Layout>} />
+                  <Route path="/tienda/:slug/buscar/:termino" element={<Layout><ResultadoBusqueda /></Layout>} />
+                  <Route path="/tienda/:slug/empleado/forma-pago" element={<Layout><FormaDePagoEmpleado /></Layout>} />
+                  <Route path="/tienda/:slug/historial" element={<Layout><Historial /></Layout>} />
 
-                <Route path="/seleccionar-tienda" element={<SeleccionarTienda />} />
+                  <Route path="/seleccionar-tienda" element={<SeleccionarTienda />} />
 
-                <Route path="/admin/:slug" element={
-                  <PrivateRoute>
-                    <Admin />
-                  </PrivateRoute>
-                } />
-                <Route path="/admin/:slug/pedidos" element={
-                  <PrivateRoute permiteEmpleado>
-                    <Pedidos />
-                  </PrivateRoute>
-                } />
+                  <Route path="/admin/:slug" element={
+                    <PrivateRoute>
+                      <Admin />
+                    </PrivateRoute>
+                  } />
+                  <Route path="/admin/:slug/pedidos" element={
+                    <PrivateRoute permiteEmpleado>
+                      <Pedidos />
+                    </PrivateRoute>
+                  } />
 
-                <Route path="/login" element={<Login />} />
-              </Routes>
-            </Router>
+                  <Route path="/superadmin/estadisticas" element={<EstadisticasTiendas />} />
+                  <Route path="/superadmin/cupones" element={<CuponesDescuento />} />
+
+                  <Route path="/login" element={<Login />} />
+                </Routes>
+              </Router>
+            </SuperAdminProvider>
           </TiendaProvider>
         </CarritoProvider>
       </ClienteProvider>

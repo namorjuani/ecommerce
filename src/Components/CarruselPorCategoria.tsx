@@ -56,7 +56,6 @@ export default function CarruselPorCategoria({ categoria, productos, carruselId,
         <h3 style={{ marginBottom: "1rem", color: "#333" }}>{categoria}</h3>
 
         <div style={{ position: "relative" }}>
-          {/* Carrusel */}
           <div
             id={carruselId}
             className="carrusel-scroll"
@@ -66,8 +65,8 @@ export default function CarruselPorCategoria({ categoria, productos, carruselId,
               overflowX: "auto",
               scrollBehavior: "smooth",
               paddingBottom: "0.5rem",
-              scrollbarWidth: "none", // Firefox
-              msOverflowStyle: "none", // IE y Edge
+              scrollbarWidth: "none",
+              msOverflowStyle: "none",
             }}
           >
             {productos.map((producto) => {
@@ -77,7 +76,7 @@ export default function CarruselPorCategoria({ categoria, productos, carruselId,
 
               return (
                 <Link
-                  to={`/tienda/${slug}/producto/${producto.id}`}
+                  to={`/tienda/${slug}/${producto.tipo}/${producto.id}`}
                   key={producto.id}
                   className="product-card"
                   style={{
@@ -140,11 +139,9 @@ export default function CarruselPorCategoria({ categoria, productos, carruselId,
               );
             })}
 
-            {/* Espacio invisible para la última card si hay flecha */}
             {mostrarFlecha && <div style={{ flex: "0 0 auto", width: "50px" }}></div>}
           </div>
 
-          {/* Flechas */}
           {mostrarFlecha && (
             <>
               <button
@@ -194,7 +191,6 @@ export default function CarruselPorCategoria({ categoria, productos, carruselId,
             </>
           )}
 
-          {/* 📊 Barra de progreso */}
           <div
             style={{
               height: "4px",
@@ -216,7 +212,6 @@ export default function CarruselPorCategoria({ categoria, productos, carruselId,
         </div>
       </div>
 
-      {/* Ocultar scrollbar visual para Webkit (Chrome, Safari) */}
       <style>
         {`
           .carrusel-scroll::-webkit-scrollbar {

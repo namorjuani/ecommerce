@@ -1,11 +1,13 @@
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCliente } from "../context/ClienteContext";
 import BarraBusqueda from "./BarraBusqueda";
 import BotonCarritoHeader from "./BotonCarritoHeader";
 import CajaModalEmpleado from "./empleados/CajaModalEmpleado";
 import { useAuth } from "../context/AuthContext";
 import { MdInventory2, MdAssignment, MdAdminPanelSettings } from "react-icons/md";
+import { db } from "../firebase";
+import { collection, getDocs } from "firebase/firestore";
 
 interface Props {
   logo: string;
@@ -43,6 +45,19 @@ export default function Header({
   const navigate = useNavigate();
   const { usuario, rol } = useAuth();
   const userId = localStorage.getItem("userId");
+
+  const [pedidosPendientes, setPedidosPendientes] = useState(0);
+
+  useEffect(() => {
+    if (!userId) return;
+    const fetchPedidos = async () => {
+      const ref = collection(db, "tiendas", userId, "pedidos");
+      const snap = await getDocs(ref);
+      const pendientes = snap.docs.filter((doc) => doc.data()?.estado === "pendiente").length;
+      setPedidosPendientes(pendientes);
+    };
+    fetchPedidos();
+  }, [userId]);
 
   return (
     <div className="header-container" style={{ position: "sticky", top: 0, zIndex: 999, backgroundColor: "#fff" }}>
@@ -162,24 +177,36 @@ export default function Header({
             style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
             title="Compartir"
           >
-            <img
-              src="https://cdn-icons-png.flaticon.com/512/929/929610.png"
-              alt="Compartir"
-              style={{ width: 20 }}
-            />
+            <img src="https://cdn-icons-png.flaticon.com/512/929/929610.png" alt="Compartir" style={{ width: 20 }} />
           </button>
 
           <BotonCarritoHeader />
 
           {(rol === "admin" || rol === "empleado") && userId && (
             <>
-              <button
-                onClick={() => navigate(`/admin/${userId}/pedidos`)}
-                style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
-                title="Pedidos"
-              >
-                <MdAssignment size={24} />
-              </button>
+              <div style={{ position: "relative" }}>
+                <button
+                  onClick={() => navigate(`/admin/${userId}/pedidos`)}
+                  style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                  title="Pedidos"
+                >
+                  <MdAssignment size={24} />
+                  {pedidosPendientes > 0 && (
+                    <span style={{
+                      position: "absolute",
+                      bottom: -4,
+                      right: -4,
+                      background: "red",
+                      color: "white",
+                      fontSize: "0.7rem",
+                      padding: "2px 6px",
+                      borderRadius: "50%"
+                    }}>
+                      {pedidosPendientes}
+                    </span>
+                  )}
+                </button>
+              </div>
 
               <button
                 onClick={() => setMostrarCaja(true)}
@@ -192,12 +219,7 @@ export default function Header({
               {rol === "admin" && (
                 <button
                   onClick={() => navigate(`/admin/${userId}`)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: 0
-                  }}
+                  style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
                   title="Modo Admin"
                 >
                   <MdAdminPanelSettings size={24} color="#3483fa" />
@@ -223,15 +245,9 @@ export default function Header({
                 }}
               >
                 {cliente.photoURL ? (
-                  <img
-                    src={cliente.photoURL}
-                    alt="Perfil"
-                    style={{ width: "100%", height: "100%", borderRadius: "50%" }}
-                  />
+                  <img src={cliente.photoURL} alt="Perfil" style={{ width: "100%", height: "100%", borderRadius: "50%" }} />
                 ) : (
-                  <span>
-                    {cliente.displayName?.split(" ").map((n) => n[0]).join("").toUpperCase()}
-                  </span>
+                  <span>{cliente.displayName?.split(" ").map((n) => n[0]).join("").toUpperCase()}</span>
                 )}
               </div>
               {mostrarMenu && (
@@ -247,9 +263,7 @@ export default function Header({
                     zIndex: 999,
                   }}
                 >
-                  <button onClick={() => navigate(`/tienda/${userId}/historial`)}>
-                    🧾 Historial
-                  </button>
+                  <button onClick={() => navigate(`/tienda/${userId}/historial`)}>🧾 Historial</button>
                   <button onClick={() => navigate("/datos-envio")}>📦 Datos de envío</button>
                   <button onClick={cerrarSesion}>🚪 Cerrar sesión</button>
                 </div>

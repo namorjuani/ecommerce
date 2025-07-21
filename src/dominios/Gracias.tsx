@@ -6,22 +6,19 @@ import { doc, setDoc, getDoc, arrayUnion } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 
 const Gracias = () => {
-  const [correo, setCorreo] = useState('');         // Correo del admin que crea la tienda
-  const [tienda, setTienda] = useState('');         // Nombre elegido para la tienda
-  const [creando, setCreando] = useState(false);    // Estado para mostrar loader al crear
-  const [creada, setCreada] = useState(false);      // Estado para mostrar confirmación
+  const [correo, setCorreo] = useState('');
+  const [tienda, setTienda] = useState('');
+  const [plan, setPlan] = useState<'basico' | 'estandar' | 'premium'>('basico');
+  const [creando, setCreando] = useState(false);
+  const [creada, setCreada] = useState(false);
   const navigate = useNavigate();
 
-  /**
-   * Valida campos y crea la tienda en Firestore con toda la estructura inicial
-   */
   const handleCrearTienda = async () => {
     if (!correo || !tienda) {
       alert('Completá todos los campos');
       return;
     }
 
-    // Convierte el nombre de la tienda en un slug limpio (sin espacios)
     const nombreLimpio = tienda.toLowerCase().replace(/\s+/g, '');
 
     setCreando(true);
@@ -36,15 +33,17 @@ const Gracias = () => {
         return;
       }
 
-      // Paso 1: Crear documento principal de la tienda
       await setDoc(docRef, {
         adminEmail: correo,
         estado: 'activa',
         creada: new Date(),
-        vence: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 días de prueba
+        vence: Date.now() + 30 * 24 * 60 * 60 * 1000,
+        plan: plan,
+        limiteProductos: plan === 'basico' ? 50 : plan === 'estandar' ? 300 : null,
+        limiteServicios: plan === 'basico' ? 0 : plan === 'estandar' ? 100 : null,
+        limiteTotal: plan === 'basico' ? 50 : plan === 'estandar' ? 400 : null,
       });
 
-      // Paso 2: Crear configuración visual inicial
       await setDoc(doc(db, 'tiendas', nombreLimpio, 'configuracion', 'visual'), {
         nombre: nombreLimpio,
         descripcion: "",
@@ -65,19 +64,16 @@ const Gracias = () => {
         tamañoBanner: "cover",
       });
 
-      // Paso 3: Registrar usuario como admin en la tienda
       await setDoc(doc(db, 'tiendas', nombreLimpio, 'usuarios', correo), {
         rol: "admin",
         creado: new Date(),
       });
 
-      // Paso 4: Asociar la tienda al documento del usuario (usuarios global)
       await setDoc(doc(db, "usuarios", correo), {
         tiendas: arrayUnion(nombreLimpio),
         rol: "admin"
       }, { merge: true });
 
-      // Paso 5: Guardar en localStorage y redirigir
       localStorage.setItem('userId', nombreLimpio);
       localStorage.setItem('correoAdmin', correo);
       setCreada(true);
@@ -99,6 +95,13 @@ const Gracias = () => {
       {!creada ? (
         <>
           <p>Completá estos datos para activar tu tienda:</p>
+
+          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+            <button onClick={() => setPlan('basico')}>Plan Básico</button>
+            <button onClick={() => setPlan('estandar')}>Plan Estándar</button>
+            <button onClick={() => setPlan('premium')}>Plan Premium</button>
+          </div>
+
           <input
             type="email"
             placeholder="Tu correo"

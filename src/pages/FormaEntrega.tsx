@@ -4,8 +4,14 @@ import Swal from "sweetalert2";
 import { useCarrito } from "../context/CarritoContext";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, setDoc } from "firebase/firestore";
 import { useCliente } from "../context/ClienteContext";
+
+interface Envio {
+  id: string;
+  nombre: string;
+  costoExtra: number;
+}
 
 export default function FormaEntrega() {
   const [envio, setEnvio] = useState("");
@@ -16,11 +22,14 @@ export default function FormaEntrega() {
     telefono: "",
     email: ""
   });
+  const [empresaEnvio, setEmpresaEnvio] = useState<string>("");
+  const [enviosDisponibles, setEnviosDisponibles] = useState<Envio[]>([]);
   const { cliente } = useCliente();
   const { carrito, eliminarDelCarrito, vaciarCarrito, calcularTotal, actualizarCantidad } = useCarrito();
   const { esEmpleado } = useAuth();
   const navigate = useNavigate();
   const { slug } = useParams();
+  const [costoExtraEnvio, setCostoExtraEnvio] = useState(0);
 
   useEffect(() => {
     if (esEmpleado) setEnvio("retiro");
@@ -42,10 +51,28 @@ export default function FormaEntrega() {
     }
   }, [cliente]);
 
-  const total = calcularTotal();
+  useEffect(() => {
+    const cargarEnvios = async () => {
+      if (!slug) return;
+      const ref = collection(db, "tiendas", slug, "envios");
+      const snap = await getDocs(ref);
+      const lista = snap.docs.map((d) => ({ ...(d.data() as Envio), id: d.id }));
+      setEnviosDisponibles(lista);
+    };
+    cargarEnvios();
+  }, [slug]);
+
+  const totalProductos = calcularTotal();
+  const totalFinal = totalProductos + costoExtraEnvio;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setClienteInfo({ ...clienteInfo, [e.target.name]: e.target.value });
+  };
+
+  const handleEmpresaChange = (id: string) => {
+    setEmpresaEnvio(id);
+    const seleccion = enviosDisponibles.find((e) => e.id === id);
+    setCostoExtraEnvio(seleccion?.costoExtra || 0);
   };
 
   const guardarDatosEnvio = async () => {
@@ -72,6 +99,8 @@ export default function FormaEntrega() {
       return;
     }
     localStorage.setItem("formaEntrega", envio);
+    localStorage.setItem("empresaEnvio", empresaEnvio);
+    localStorage.setItem("costoExtraEnvio", costoExtraEnvio.toString());
     navigate(`/tienda/${slug}/forma-pago`);
   };
 
@@ -100,6 +129,24 @@ export default function FormaEntrega() {
               <input type="text" name="direccion" placeholder="Dirección" value={clienteInfo.direccion} onChange={handleInputChange} />
               <input type="text" name="telefono" placeholder="Teléfono" value={clienteInfo.telefono} onChange={handleInputChange} />
               <input type="text" name="email" placeholder="Correo electrónico" value={clienteInfo.email} onChange={handleInputChange} />
+
+              <h4 style={{ marginTop: "1rem" }}>Seleccioná transporte:</h4>
+              {enviosDisponibles.length > 0 ? (
+                enviosDisponibles.map((e) => (
+                  <label key={e.id} style={{ display: "block" }}>
+                    <input
+                      type="radio"
+                      name="empresaEnvio"
+                      value={e.id}
+                      checked={empresaEnvio === e.id}
+                      onChange={() => handleEmpresaChange(e.id)}
+                    />{" "}
+                    {e.nombre} {e.costoExtra ? `(+ $${e.costoExtra})` : ""}
+                  </label>
+                ))
+              ) : (
+                <p>No hay transportes configurados.</p>
+              )}
 
               <button
                 style={{ marginTop: "1rem", backgroundColor: "#3483fa", color: "white", padding: "0.5rem 1rem", border: "none", borderRadius: "5px", cursor: "pointer" }}
@@ -176,7 +223,9 @@ export default function FormaEntrega() {
               <span style={{ fontSize: "0.9rem" }}>{prod.nombre} x {prod.cantidad}</span>
             </div>
           ))}
-          <p style={{ marginTop: "1rem", fontWeight: "bold" }}>Total: ${total}</p>
+          <p style={{ marginTop: "1rem", fontWeight: "bold" }}>Productos: ${totalProductos}</p>
+          <p style={{ fontWeight: "bold" }}>Envío: ${costoExtraEnvio}</p>
+          <p style={{ marginTop: "0.5rem", fontWeight: "bold" }}>Total: ${totalFinal}</p>
         </div>
       </div>
     </div>
