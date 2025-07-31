@@ -91,21 +91,13 @@ export default function CarruselPorCategoria({ categoria, productos, carruselId,
                   }}
                 >
                   <img
-                    src={producto.imagen && producto.imagen.trim() !== "" ? producto.imagen : "/imagen-default.jpg"}
-                    alt={producto.nombre}
-                    onError={(e) => {
-                      if (e.currentTarget.src !== window.location.origin + "/imagen-default.jpg") {
-                        e.currentTarget.src = "/imagen-default.jpg";
-                      }
-                    }}
-                    style={{
-                      width: "100%",
-                      height: "140px",
-                      objectFit: "cover",
-                      borderRadius: "5px",
-                      marginBottom: "0.5rem",
-                    }}
-                  />
+  src={producto.imagen || "https://cdn-icons-png.flaticon.com/512/4154/4154438.png"}
+  alt={producto.nombre}
+  onError={(e) => {
+    e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/4154/4154438.png";
+  }}
+/>
+
 
                   <h4 className="product-title" style={{ fontSize: "0.9rem", margin: "0.5rem 0" }}>
                     {producto.nombre}

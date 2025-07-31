@@ -1,5 +1,8 @@
+
+import WelcomeEmailTest from "../WelcomeEmailTest";
 export default function Ayuda() {
     return (
+        
         <>
             <h3>Ayuda para el administrador</h3>
             <ul style={{ lineHeight: "1.8" }}>

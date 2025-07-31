@@ -37,6 +37,7 @@ export default function Home() {
   const [cat2, setCat2] = useState("");
   const [categoriaFiltrada, setCategoriaFiltrada] = useState<string | null>(null);
   const [tienda, setTienda] = useState<any>(null);
+  const [estado, setEstado] = useState("activa"); // 👈 nuevo
   const { slug } = useParams();
 
   useEffect(() => {
@@ -50,6 +51,7 @@ export default function Home() {
       if (snap.exists()) {
         const data = snap.data();
         setTienda(data);
+        setEstado(data.estado || "activa"); // 👈 nuevo
         setNombre(data.nombre || "Mi tienda");
         setImagen(data.imagen || "");
         setWhatsapp(data.whatsapp || "");
@@ -101,6 +103,17 @@ export default function Home() {
     .filter((cat) => cat !== cat1 && cat !== cat2);
 
   const categoriasExtrasServicios = Array.from(new Set(servicios.map((s) => s.categoria)));
+
+  // 👇 mostramos página suspendida si corresponde
+  if (estado === "suspendida") {
+    return (
+      <div style={{ textAlign: "center", padding: "4rem" }}>
+        <h2>🚫 Página fuera de servicio</h2>
+        <p>Esta tienda se encuentra temporalmente suspendida por falta de pago.</p>
+        <p>Si sos el dueño, accedé al panel de administración para reactivarla.</p>
+      </div>
+    );
+  }
 
   return (
     <>

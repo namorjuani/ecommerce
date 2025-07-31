@@ -1,11 +1,10 @@
-// src/context/TiendaContext.tsx
+// ✅ TiendaContext.tsx
 import { createContext, useContext, useEffect, useState } from "react";
 import { db } from "../firebase";
 import { doc, onSnapshot } from "firebase/firestore";
 import { useParams } from "react-router-dom";
 
-// ✅ Interfaz que define el shape (estructura) de los datos de configuración visual de la tienda
-interface TiendaData {
+export interface TiendaData {
   nombre: string;
   descripcion: string;
   imagen: string;
@@ -25,45 +24,39 @@ interface TiendaData {
   tamañoBanner: string;
 }
 
-// ✅ Creamos el contexto inicial, que arranca en null
-const TiendaContext = createContext<TiendaData | null>(null);
+interface TiendaContextType {
+  tienda: TiendaData | null;
+  setTiendaActual: (tienda: TiendaData) => void;
+}
 
-// ✅ Hook personalizado para consumir el contexto
+const TiendaContext = createContext<TiendaContextType>({
+  tienda: null,
+  setTiendaActual: () => {},
+});
+
 export const useTienda = () => useContext(TiendaContext);
 
-// ✅ Provider que obtiene y expone los datos de la tienda
 export function TiendaProvider({ children }: { children: React.ReactNode }) {
   const [tienda, setTienda] = useState<TiendaData | null>(null);
-  const { slug } = useParams();  // Obtenemos el slug dinámico de la URL (ej: /tienda/:slug)
+  const { slug } = useParams();
 
   useEffect(() => {
-    if (!slug) return; // Si no hay slug, no hacemos nada
-
-    // Referencia al documento de configuración visual de la tienda en Firestore
+    if (!slug) return;
     const ref = doc(db, "tiendas", slug, "configuracion", "visual");
-
-    // Escuchamos cambios en tiempo real con onSnapshot
     const unsubscribe = onSnapshot(ref, (snap) => {
       if (snap.exists()) {
         const data = snap.data() as TiendaData;
-
-        // Guardamos los datos en el estado
         setTienda(data);
-
-        // Si hay un color de fondo, lo aplicamos como variable CSS global
         if (data.colorFondo) {
           document.documentElement.style.setProperty("--color-fondo", data.colorFondo);
         }
       }
     });
-
-    // Limpiamos el listener al desmontar o cambiar de tienda
     return () => unsubscribe();
-  }, [slug]); // Se dispara si cambia el slug
+  }, [slug]);
 
-  // Exponemos el valor de tienda a través del contexto
   return (
-    <TiendaContext.Provider value={tienda}>
+    <TiendaContext.Provider value={{ tienda, setTiendaActual: setTienda }}>
       {children}
     </TiendaContext.Provider>
   );

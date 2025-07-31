@@ -13,7 +13,6 @@ export default function Layout({ children }: { children: ReactNode }) {
   const { carrito } = useCarrito();
   const [esAdmin, setEsAdmin] = useState(false);
   const [colorFondo, setColorFondo] = useState("#ffffff");
-  const [slugActivo, setSlugActivo] = useState<string | null>(null);
 
   useEffect(() => {
     const verificarAdminYColor = async () => {
@@ -36,7 +35,6 @@ export default function Layout({ children }: { children: ReactNode }) {
           if (tiendaSnap.exists() && tiendaSnap.data()?.adminEmail === usuario.email) {
             setEsAdmin(true);
             localStorage.setItem("userId", slug);
-            setSlugActivo(slug);
             return;
           }
 
@@ -45,7 +43,6 @@ export default function Layout({ children }: { children: ReactNode }) {
           if (userSnap.exists() && userSnap.data()?.rol === "admin") {
             setEsAdmin(true);
             localStorage.setItem("userId", slug);
-            setSlugActivo(slug);
             return;
           }
 
@@ -60,7 +57,6 @@ export default function Layout({ children }: { children: ReactNode }) {
     verificarAdminYColor();
   }, [usuario, slug]);
 
-  // Ya no hace falta el botón acá, lo mandamos al header
   return (
     <div className="layout" style={{ backgroundColor: colorFondo }}>
       <main className="main-content">{children}</main>

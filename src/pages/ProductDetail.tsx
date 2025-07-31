@@ -32,7 +32,8 @@ export default function ProductDetail() {
   const { slug, id } = useParams();
   const navigate = useNavigate();
   const { agregarAlCarrito } = useCarrito();
-  const tienda = useTienda();
+  const { tienda } = useTienda();
+
 
   const [producto, setProducto] = useState<Producto | null>(null);
   const [imagenPrincipal, setImagenPrincipal] = useState("");
@@ -103,6 +104,7 @@ export default function ProductDetail() {
   }
 
   return (
+    
     <>
       {tienda && (
         <Header
@@ -135,17 +137,20 @@ export default function ProductDetail() {
       >
         <div style={{ flex: "1", minWidth: "300px" }}>
           <img
-            src={imagenPrincipal}
-            alt="Producto"
-            onError={() => setImagenPrincipal("/imagen-default.jpg")}
-            style={{
-              width: "100%",
-              maxHeight: "400px",
-              objectFit: "contain",
-              borderRadius: "10px",
-              marginBottom: "1rem",
-            }}
-          />
+  src={imagenPrincipal || "https://cdn-icons-png.flaticon.com/512/4154/4154438.png"}
+  alt="Producto"
+  onError={() =>
+    setImagenPrincipal("https://cdn-icons-png.flaticon.com/512/4154/4154438.png")
+  }
+  style={{
+    width: "100%",
+    maxHeight: "400px",
+    objectFit: "contain",
+    borderRadius: "10px",
+    marginBottom: "1rem",
+  }}
+/>
+
           <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
             {producto.imagenes?.map((img, index) => (
               <img

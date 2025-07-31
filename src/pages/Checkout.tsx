@@ -38,7 +38,14 @@ export default function Checkout() {
           <ul className="checkout-listado">
             {carrito.map((producto) => (
               <li key={producto.id} className="checkout-item">
-                <img src={producto.imagen} alt={producto.nombre} />
+                <img
+                  src={producto.imagen || "https://cdn-icons-png.flaticon.com/512/4154/4154438.png"}
+                  alt={producto.nombre}
+                  onError={(e) => {
+                    e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/4154/4154438.png";
+                  }}
+                />
+
                 <div>
                   <p><strong>{producto.nombre}</strong></p>
                   <p>Precio: ${producto.precio}</p>

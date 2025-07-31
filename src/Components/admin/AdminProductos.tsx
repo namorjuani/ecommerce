@@ -5,6 +5,9 @@ import { collection, addDoc, getDocs } from "firebase/firestore";
 import ImportadorCSV from "../../pages/ImportadorCSV";
 import ModificarProductos from "../../pages/ModificarProductos";
 import { checkLimits } from "../../../functions/src/utils/checkLimits";
+import BotonCancelarCuenta from "../BotonCancelarCuenta";
+import { doc, getDoc, setDoc, updateDoc, arrayUnion } from "firebase/firestore";
+import Renovar from "../../pages/Renovar";
 
 interface Producto {
     id?: string;
@@ -72,37 +75,62 @@ export default function AdminProductos({ slug }: { slug: string }) {
         obtenerAlmacenamiento();
     }, []);
 
-    const guardarNuevoItem = async () => {
-        if (!usuario) return;
-        const result = await checkLimits(slug);
-        if (!result.allowed) {
-            alert(result.reason);
-            return;
-        }
 
-        const ref = collection(db, "tiendas", slug, nuevo.tipo === "producto" ? "productos" : "servicios");
-        await addDoc(ref, nuevo);
-        await obtenerAlmacenamiento();
-        alert(`${nuevo.tipo === "producto" ? "Producto" : "Servicio"} agregado`);
 
-        setNuevo({
-            nombre: "",
-            precio: 0,
-            imagen: "",
-            imagenes: [],
-            descripcion: "",
-            descripcionCorta: "",
-            cuotas: "",
-            envioGratis: false,
-            color: "",
-            stock: 0,
-            tipo: "producto",
-            categoria: "",
-            variantes: [],
-            precioReserva: 0,
-            precioTotal: 0,
+const guardarNuevoItem = async () => {
+  if (!usuario) return;
+  const result = await checkLimits(slug);
+  if (!result.allowed) {
+    alert(result.reason);
+    return;
+  }
+
+  const ref = collection(db, "tiendas", slug, nuevo.tipo === "producto" ? "productos" : "servicios");
+  await addDoc(ref, nuevo);
+  await obtenerAlmacenamiento();
+  alert(`${nuevo.tipo === "producto" ? "Producto" : "Servicio"} agregado`);
+
+  // 🔥 Actualizar categoriasExtras en configuracion/visual
+  const categoria = nuevo.categoria?.trim();
+  if (categoria) {
+    const visualRef = doc(db, "tiendas", slug, "configuracion", "visual");
+    const snap = await getDoc(visualRef);
+
+    if (snap.exists()) {
+      const data = snap.data();
+      const categoriasExtras: string[] = data.categoriasExtras || [];
+
+      if (!categoriasExtras.includes(categoria)) {
+        await updateDoc(visualRef, {
+          categoriasExtras: arrayUnion(categoria),
         });
-    };
+      }
+    } else {
+      // Si no existe el documento, lo creamos con la categoría
+      await setDoc(visualRef, {
+        categoriasExtras: [categoria],
+      }, { merge: true });
+    }
+  }
+
+  setNuevo({
+    nombre: "",
+    precio: 0,
+    imagen: "",
+    imagenes: [],
+    descripcion: "",
+    descripcionCorta: "",
+    cuotas: "",
+    envioGratis: false,
+    color: "",
+    stock: 0,
+    tipo: "producto",
+    categoria: "",
+    variantes: [],
+    precioReserva: 0,
+    precioTotal: 0,
+  });
+};
 
     return (
         <>
@@ -122,6 +150,10 @@ export default function AdminProductos({ slug }: { slug: string }) {
                     </div>
                 )}
             </div>
+
+            <BotonCancelarCuenta />
+            <Renovar/>
+
 
             <ImportadorCSV slug={slug} />
 

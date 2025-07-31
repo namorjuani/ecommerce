@@ -1,3 +1,5 @@
+
+import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Admin from "./Components/admin/Admin";
@@ -25,13 +27,34 @@ import Landing from "./dominios/Landing";
 import Planes from "./dominios/Planes";
 import SeleccionarTienda from "./dominios/SeleccionarTienda";
 import Historial from "./pages/Historial";
-
-// ✅ Super Admin Context para PIN privado
+import { isOneDayBeforeTrialEnd } from './utils/trialUtils';
+import { sendReminderEmail } from './services/emailService';
+import Footer from "./Components/Footer";
 import { SuperAdminProvider } from "./context/SuperAdminContext";
 import EstadisticasTiendas from "./adminSistema/pages/EstadisticasTiendas";
 import CuponesDescuento from "./adminSistema/pages/CuponesDescuentos";
+import ContratarServicio from "./dominios/ContratarServicio";
 
 export default function App() {
+  const user = {
+    nombre: "Juani",
+    email: "namor.juaningacio@gmail.com",
+    fechaInicio: "2025-07-17",
+  };
+
+  useEffect(() => {
+    const diasDePrueba = 7;
+    if (user && user.fechaInicio && isOneDayBeforeTrialEnd(user.fechaInicio, diasDePrueba)) {
+      sendReminderEmail(user.nombre, user.email, 1)
+        .then(() => {
+          console.log('Recordatorio enviado ✅');
+        })
+        .catch((err: any) => {
+          console.error('Error al enviar recordatorio ❌', err);
+        });
+    }
+  }, []);
+
   return (
     <AuthProvider>
       <ClienteProvider>
@@ -43,7 +66,7 @@ export default function App() {
                   <Route path="/" element={<Landing />} />
                   <Route path="/planes" element={<Planes />} />
                   <Route path="/gracias" element={<Gracias />} />
-
+                  <Route path="/contratar-servicio" element={<ContratarServicio />} />
                   <Route path="/tienda/:slug" element={<Layout><Tienda /></Layout>} />
                   <Route path="/tienda/:slug/producto/:id" element={<Layout><ProductDetail /></Layout>} />
                   <Route path="/tienda/:slug/servicio/:id" element={<Layout><ProductDetail /></Layout>} />
@@ -57,23 +80,11 @@ export default function App() {
                   <Route path="/tienda/:slug/buscar/:termino" element={<Layout><ResultadoBusqueda /></Layout>} />
                   <Route path="/tienda/:slug/empleado/forma-pago" element={<Layout><FormaDePagoEmpleado /></Layout>} />
                   <Route path="/tienda/:slug/historial" element={<Layout><Historial /></Layout>} />
-
                   <Route path="/seleccionar-tienda" element={<SeleccionarTienda />} />
-
-                  <Route path="/admin/:slug" element={
-                    <PrivateRoute>
-                      <Admin />
-                    </PrivateRoute>
-                  } />
-                  <Route path="/admin/:slug/pedidos" element={
-                    <PrivateRoute permiteEmpleado>
-                      <Pedidos />
-                    </PrivateRoute>
-                  } />
-
+                  <Route path="/admin/:slug" element={<PrivateRoute><Admin /></PrivateRoute>} />
+                  <Route path="/admin/:slug/pedidos" element={<PrivateRoute permiteEmpleado><Pedidos /></PrivateRoute>} />
                   <Route path="/superadmin/estadisticas" element={<EstadisticasTiendas />} />
                   <Route path="/superadmin/cupones" element={<CuponesDescuento />} />
-
                   <Route path="/login" element={<Login />} />
                 </Routes>
               </Router>

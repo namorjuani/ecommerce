@@ -55,8 +55,10 @@ export default function ResultadoBusqueda() {
   );
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h2>Resultados para "{termino}"</h2>
+  <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+    <div style={{ maxWidth: "1000px", margin: "auto", padding: "2rem" }}>
+      <h2 style={{ marginBottom: "2rem", textAlign: "center" }}>Resultados para "{termino}"</h2>
+
       {resultados.length > 0 ? (
         <div
           style={{
@@ -92,9 +94,8 @@ export default function ResultadoBusqueda() {
                   marginBottom: "0.5rem",
                 }}
               />
-              <h3 style={{ fontSize: "1rem", margin: "0.3rem 0" }}>
-                {item.nombre}
-              </h3>
+              <h3 style={{ fontSize: "1rem", margin: "0.3rem 0" }}>{item.nombre}</h3>
+
               {item.tipo === "producto" ? (
                 <p style={{ fontWeight: "bold" }}>${item.precio}</p>
               ) : (
@@ -111,17 +112,18 @@ export default function ResultadoBusqueda() {
                   )}
                 </div>
               )}
+
               {item.envioGratis && (
-                <p style={{ color: "green", fontSize: "0.85rem" }}>
-                  Envío gratis
-                </p>
+                <p style={{ color: "green", fontSize: "0.85rem" }}>Envío gratis</p>
               )}
             </Link>
           ))}
         </div>
       ) : (
-        <p>No se encontraron resultados.</p>
+        <p style={{ textAlign: "center", marginTop: "2rem" }}>No se encontraron resultados.</p>
       )}
     </div>
-  );
+  </div>
+);
+
 }

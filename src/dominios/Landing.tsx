@@ -1,17 +1,26 @@
 // src/dominios/Landing.tsx
 import { useNavigate } from 'react-router-dom';
 import '../pages/css/Landing.css';
-import '../pages/css/Planes.css';  // Asegurate de importar el CSS de los planes
+import '../pages/css/Planes.css';
+import Swal from 'sweetalert2';
 
 export default function Landing() {
   const navigate = useNavigate();
+
+  const mostrarProximamente = () => {
+    Swal.fire({
+      icon: 'info',
+      title: '¡Próximamente!',
+      text: 'Este plan estará disponible muy pronto. Estamos trabajando para ofrecerte más opciones.',
+      confirmButtonColor: '#3085d6',
+    });
+  };
 
   return (
     <div className="landing-container">
       <header>
         <h1>🛍️ Creá tu propia tienda online</h1>
         <p>Sin comisiones. Sin complicaciones. Todo listo para vender.</p>
-
       </header>
 
       <section>
@@ -25,10 +34,10 @@ export default function Landing() {
         </ul>
       </section>
 
-      {/* NUEVO BLOQUE DE PLANES INTEGRADO */}
       <section>
         <h2 style={{ textAlign: "center", marginTop: "3rem" }}>Nuestros planes</h2>
         <div className="planes-container">
+
           {/* Básico */}
           <div className="plan-card">
             <div className="plan-title">Básico</div>
@@ -40,7 +49,7 @@ export default function Landing() {
               <li>Sin WhatsApp</li>
               <li>Dominio temporal</li>
             </ul>
-            <button className="plan-button" onClick={() => alert("Próximamente")}>
+            <button className="plan-button" onClick={mostrarProximamente}>
               Ver más
             </button>
           </div>
@@ -56,10 +65,32 @@ export default function Landing() {
               <li>Botón WhatsApp</li>
               <li>Manejo de empleados y cajas</li>
             </ul>
-            <button className="plan-button" onClick={() => navigate("/gracias")}>
+
+            {/* Botón para prueba gratuita */}
+            <button
+              className="plan-button"
+              style={{
+                backgroundColor: "#3498db",
+                marginBottom: "0.5rem",
+              }}
+              onClick={() => navigate("/gracias?plan=estandar")}
+            >
+              Probar gratis
+            </button>
+
+            {/* Botón para pagar directamente */}
+            <button
+              className="plan-button"
+              style={{
+                backgroundColor: "#2ecc71",
+                fontWeight: "bold",
+              }}
+              onClick={() => navigate("/contratar-servicio")}
+            >
               Contratar ahora
             </button>
           </div>
+
 
           {/* Premium */}
           <div className="plan-card">
@@ -72,16 +103,14 @@ export default function Landing() {
               <li>Soporte prioritario</li>
               <li>Consultor personalizado</li>
             </ul>
-            <button className="plan-button" onClick={() => alert("Próximamente")}>
+            <button className="plan-button" onClick={mostrarProximamente}>
               Ver más
             </button>
           </div>
         </div>
-
-        <div style={{ textAlign: "center", marginTop: "1rem" }}>
-        </div>
       </section>
-    {/* 🎥 Apartado de videos */}
+
+      {/* 🎥 Apartado de videos */}
       <section style={{ marginTop: "2rem" }}>
         <h2>🎥 Conocé la app</h2>
         <div style={{
@@ -112,6 +141,7 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
       <footer>
         <p>Hecho con 💙 para emprendedores</p>
       </footer>

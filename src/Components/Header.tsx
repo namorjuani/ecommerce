@@ -44,8 +44,7 @@ export default function Header({
   const [mostrarCaja, setMostrarCaja] = useState(false);
   const navigate = useNavigate();
   const { usuario, rol } = useAuth();
-  const userId = localStorage.getItem("userId");
-
+  const userId = localStorage.getItem("tiendaSlugActual");
   const [pedidosPendientes, setPedidosPendientes] = useState(0);
 
   useEffect(() => {
@@ -110,47 +109,68 @@ export default function Header({
           boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
         }}
       >
-        <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-          <span style={{ cursor: "pointer" }} onClick={() => setCategoriaFiltrada?.(null)}>Inicio</span>
-          <span style={{ cursor: "pointer" }} onClick={() => setCategoriaFiltrada?.(categoria1)}>{categoria1}</span>
-          <span style={{ cursor: "pointer" }} onClick={() => setCategoriaFiltrada?.(categoria2)}>{categoria2}</span>
+        <div style={{ display: "flex", gap: "16px", alignItems: "center", flexWrap: "wrap" }}>
+          <span style={{ cursor: "pointer" }} onClick={() => {
+            navigate(`/tienda/${userId}`);
+            setCategoriaFiltrada?.(null);
+          }}>
+            Inicio
+          </span>
 
-          <div style={{ position: "relative" }}>
-            <span
-              onClick={() => setMostrarMasCategorias(!mostrarMasCategorias)}
-              style={{ cursor: "pointer" }}
-            >
-              Más categorías ▼
-            </span>
-            {mostrarMasCategorias && (
-              <div
-                style={{
-                  position: "absolute",
-                  backgroundColor: "#fff",
-                  top: "25px",
-                  left: 0,
-                  border: "1px solid #ddd",
-                  borderRadius: "6px",
-                  padding: "8px",
-                  boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-                  zIndex: 999,
-                }}
-              >
-                {categoriasExtras.map((cat) => (
-                  <div
-                    key={cat}
-                    style={{ cursor: "pointer", padding: "4px 0" }}
-                    onClick={() => {
-                      setCategoriaFiltrada?.(cat);
-                      setMostrarMasCategorias(false);
-                    }}
-                  >
-                    {cat}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <span style={{ cursor: "pointer" }} onClick={() => {
+            navigate(`/tienda/${userId}/buscar/${encodeURIComponent(categoria1)}`);
+            setCategoriaFiltrada?.(categoria1);
+          }}>
+            {categoria1}
+          </span>
+
+          <span style={{ cursor: "pointer" }} onClick={() => {
+            navigate(`/tienda/${userId}/buscar/${encodeURIComponent(categoria2)}`);
+            setCategoriaFiltrada?.(categoria2);
+          }}>
+            {categoria2}
+          </span>
+
+          {categoriasExtras.length > 0 && (
+            <div style={{ position: "relative" }}>
+              <span onClick={() => setMostrarMasCategorias(!mostrarMasCategorias)} style={{ cursor: "pointer" }}>
+                Más categorías ▼
+              </span>
+
+              {mostrarMasCategorias && (
+                <div
+                  style={{
+                    position: "absolute",
+                    backgroundColor: "#fff",
+                    top: "25px",
+                    left: 0,
+                    border: "1px solid #ddd",
+                    borderRadius: "6px",
+                    padding: "8px",
+                    boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+                    zIndex: 999,
+                    maxHeight: "200px",
+                    overflowY: "auto",
+                    width: "200px",
+                  }}
+                >
+                  {categoriasExtras.map((cat) => (
+                    <div
+                      key={cat}
+                      style={{ cursor: "pointer", padding: "6px 8px", borderBottom: "1px solid #eee" }}
+                      onClick={() => {
+                        navigate(`/tienda/${userId}/buscar/${encodeURIComponent(cat)}`);
+                        setMostrarMasCategorias(false);
+                        setCategoriaFiltrada?.(cat);
+                      }}
+                    >
+                      {cat}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>

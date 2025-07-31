@@ -11,15 +11,17 @@ export default function PrivateRoute({
   children: ReactNode;
   permiteEmpleado?: boolean;
 }) {
-  const { usuario } = useAuth();
+  const { usuario, loading } = useAuth();
   const { slug } = useParams();
   const tiendaId = slug || localStorage.getItem("userId") || "";
   const [rolDetectado, setRolDetectado] = useState<"admin" | "empleado" | null>(null);
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
     const verificarRol = async () => {
       if (!usuario || !tiendaId) {
         setRolDetectado(null);
+        setChecking(false);
         return;
       }
 
@@ -29,28 +31,28 @@ export default function PrivateRoute({
 
         if (tiendaSnap.exists() && tiendaSnap.data()?.adminEmail === usuario.email) {
           setRolDetectado("admin");
-          return;
+        } else {
+          const userRef = doc(db, "tiendas", tiendaId, "usuarios", usuario.email ?? "");
+          const userSnap = await getDoc(userRef);
+
+          if (userSnap.exists() && userSnap.data()?.rol === "empleado") {
+            setRolDetectado("empleado");
+          } else {
+            setRolDetectado(null);
+          }
         }
-
-        const userRef = doc(db, "tiendas", tiendaId, "usuarios", usuario.email ?? "");
-        const userSnap = await getDoc(userRef);
-
-        if (userSnap.exists() && userSnap.data()?.rol === "empleado") {
-          setRolDetectado("empleado");
-          return;
-        }
-
-        setRolDetectado(null);
       } catch (error) {
         console.error("Error verificando rol:", error);
         setRolDetectado(null);
+      } finally {
+        setChecking(false);
       }
     };
 
     verificarRol();
   }, [usuario, tiendaId]);
 
-  if (rolDetectado === null) {
+  if (loading || checking) {
     return (
       <div style={{ textAlign: "center", marginTop: "2rem" }}>
         <p>🔒 Verificando permisos...</p>

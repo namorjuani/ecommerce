@@ -14,14 +14,14 @@ export async function checkLimits(slug: string) {
 
     const planes: Record<"basico" | "estandar" | "premium", { limiteProductos: number | null, limiteServicios: number | null, limiteTotal: number | null }> = {
         basico: {
-            limiteProductos: 50,
+            limiteProductos: 48,
             limiteServicios: 0,
-            limiteTotal: 50,
+            limiteTotal: 48,
         },
         estandar: {
-            limiteProductos: 2,
-            limiteServicios: 2,
-            limiteTotal: 4,
+            limiteProductos: 5,
+            limiteServicios: 5,
+            limiteTotal: 10,
         },
         premium: {
             limiteProductos: null,

@@ -1,3 +1,5 @@
+// src/context/AuthContext.tsx
+
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { auth, db } from "../firebase";
@@ -8,6 +10,7 @@ interface AuthContextType {
   esAdmin: boolean;
   esEmpleado: boolean;
   rol: string;
+  loading: boolean;
   cerrarSesion: () => void;
 }
 
@@ -16,6 +19,7 @@ const AuthContext = createContext<AuthContextType>({
   esAdmin: false,
   esEmpleado: false,
   rol: "",
+  loading: true,
   cerrarSesion: () => {},
 });
 
@@ -28,6 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [esAdmin, setEsAdmin] = useState(false);
   const [esEmpleado, setEsEmpleado] = useState(false);
   const [rol, setRol] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -38,43 +43,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (user) {
         try {
-          // 👑 Verificar si es ADMIN de una tienda
           const tiendaId = localStorage.getItem("userId");
-if (tiendaId) {
-  const tiendaRef = doc(db, "tiendas", tiendaId);
-  const tiendaSnap = await getDoc(tiendaRef);
+          if (tiendaId) {
+            const tiendaRef = doc(db, "tiendas", tiendaId);
+            const tiendaSnap = await getDoc(tiendaRef);
 
-  if (tiendaSnap.exists()) {
-    const data = tiendaSnap.data();
-    if (data.adminEmail === user.email) {
-      setEsAdmin(true);
-      setRol("admin");
-      return;
-    }
+            if (tiendaSnap.exists()) {
+              const data = tiendaSnap.data();
+              if (data.adminEmail === user.email) {
+                setEsAdmin(true);
+                setRol("admin");
+                setLoading(false);
+                return;
+              }
 
-    // ✅ Buscamos empleados correctamente
-    const userRef = doc(db, "tiendas", tiendaId, "usuarios", user.email || "");
-    const userSnap = await getDoc(userRef);
+              const userRef = doc(db, "tiendas", tiendaId, "usuarios", user.email || "");
+              const userSnap = await getDoc(userRef);
 
-    if (userSnap.exists()) {
-      const userData = userSnap.data();
-      if (userData.rol) {
-        setRol(userData.rol);
-        setEsAdmin(userData.rol === "admin");
-        setEsEmpleado(userData.rol === "empleado");
-        return;
-      }
-    }
-  }
-}
+              if (userSnap.exists()) {
+                const userData = userSnap.data();
+                if (userData.rol) {
+                  setRol(userData.rol);
+                  setEsAdmin(userData.rol === "admin");
+                  setEsEmpleado(userData.rol === "empleado");
+                  setLoading(false);
+                  return;
+                }
+              }
+            }
+          }
 
-          // 👤 Por defecto es cliente
           setRol("cliente");
-
         } catch (error) {
           console.error("Error cargando datos de usuario:", error);
         }
       }
+
+      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -87,7 +92,7 @@ if (tiendaId) {
   };
 
   return (
-    <AuthContext.Provider value={{ usuario, esAdmin, esEmpleado, rol, cerrarSesion }}>
+    <AuthContext.Provider value={{ usuario, esAdmin, esEmpleado, rol, loading, cerrarSesion }}>
       {children}
     </AuthContext.Provider>
   );

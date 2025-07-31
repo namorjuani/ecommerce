@@ -1,14 +1,20 @@
-// src/dominios/Gracias.tsx
+// ✅ src/pages/Gracias.tsx
 import { useState } from 'react';
 import { db } from '../firebase';
 import '../pages/css/Gracias.css';
 import { doc, setDoc, getDoc, arrayUnion } from 'firebase/firestore';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { crearTiendaConEmail } from '../services/crearTiendaConEmail';
+import { sendWelcomeEmail } from '../services/emailService';
 
 const Gracias = () => {
   const [correo, setCorreo] = useState('');
   const [tienda, setTienda] = useState('');
-  const [plan, setPlan] = useState<'basico' | 'estandar' | 'premium'>('basico');
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const planParam = searchParams.get("plan");
+  const planValido = planParam === "estandar" || planParam === "premium" ? planParam : "basico";
+  const [plan, setPlan] = useState<'basico' | 'estandar' | 'premium'>(planValido);
   const [creando, setCreando] = useState(false);
   const [creada, setCreada] = useState(false);
   const navigate = useNavigate();
@@ -20,7 +26,6 @@ const Gracias = () => {
     }
 
     const nombreLimpio = tienda.toLowerCase().replace(/\s+/g, '');
-
     setCreando(true);
 
     try {
@@ -33,11 +38,13 @@ const Gracias = () => {
         return;
       }
 
+      const diasDePrueba = 1; // ⬆️ para probar el recordatorio, se puede cambiar luego a 15 o 30
+
       await setDoc(docRef, {
         adminEmail: correo,
         estado: 'activa',
-        creada: new Date(),
-        vence: Date.now() + 30 * 24 * 60 * 60 * 1000,
+        creada: new Date().toISOString(),
+        vence: Date.now() + diasDePrueba * 24 * 60 * 60 * 1000,
         plan: plan,
         limiteProductos: plan === 'basico' ? 50 : plan === 'estandar' ? 300 : null,
         limiteServicios: plan === 'basico' ? 0 : plan === 'estandar' ? 100 : null,
@@ -66,7 +73,7 @@ const Gracias = () => {
 
       await setDoc(doc(db, 'tiendas', nombreLimpio, 'usuarios', correo), {
         rol: "admin",
-        creado: new Date(),
+        creado: new Date().toISOString(),
       });
 
       await setDoc(doc(db, "usuarios", correo), {
@@ -74,10 +81,12 @@ const Gracias = () => {
         rol: "admin"
       }, { merge: true });
 
+      await crearTiendaConEmail(nombreLimpio, tienda, tienda, correo, plan);
+      await sendWelcomeEmail(tienda, correo, diasDePrueba); // ✉️ envío de bienvenida
+
       localStorage.setItem('userId', nombreLimpio);
       localStorage.setItem('correoAdmin', correo);
       setCreada(true);
-
       setTimeout(() => navigate(`/tienda/${nombreLimpio}`), 2500);
 
     } catch (err) {
@@ -95,13 +104,6 @@ const Gracias = () => {
       {!creada ? (
         <>
           <p>Completá estos datos para activar tu tienda:</p>
-
-          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-            <button onClick={() => setPlan('basico')}>Plan Básico</button>
-            <button onClick={() => setPlan('estandar')}>Plan Estándar</button>
-            <button onClick={() => setPlan('premium')}>Plan Premium</button>
-          </div>
-
           <input
             type="email"
             placeholder="Tu correo"
