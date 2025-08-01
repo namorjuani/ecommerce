@@ -1,0 +1,77 @@
+.pago-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 16px;
+    background: #f9fafb;
+    min-height: 100vh;
+}
+
+.pago-card {
+    background: #fff;
+    padding: 32px;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    max-width: 480px;
+    width: 100%;
+}
+
+.pago-card h2 {
+    font-size: 24px;
+    margin-bottom: 12px;
+    color: #222;
+}
+
+.pago-descripcion {
+    font-size: 16px;
+    margin-bottom: 24px;
+    color: #555;
+}
+
+.pago-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.pago-form label {
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+    color: #333;
+}
+
+.pago-form input {
+    padding: 10px;
+    margin-top: 6px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 15px;
+}
+
+.pago-form button {
+    padding: 12px;
+    background-color: #00a650;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease-in-out;
+}
+
+.pago-form button:disabled {
+    background-color: #999;
+    cursor: not-allowed;
+}
+
+.pago-form button:hover:not(:disabled) {
+    background-color: #019243;
+}
+
+.pago-error {
+    color: red;
+    font-size: 14px;
+    margin-top: 8px;
+}

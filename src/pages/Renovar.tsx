@@ -38,27 +38,26 @@ const Renovar = () => {
     };
 
     const renovarTienda = async (slug: string) => {
-        const confirmar = await Swal.fire({
-            title: "¿Deseás renovar esta tienda?",
-            text: `Tienda: ${slug}`,
-            icon: "question",
-            showCancelButton: true,
-            confirmButtonText: "Sí, renovar",
-        });
+    const confirmar = await Swal.fire({
+        title: "¿Deseás renovar esta tienda?",
+        text: `Tienda: ${slug}`,
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonText: "Sí, renovar",
+    });
 
-        if (!confirmar.isConfirmed) return;
+    if (!confirmar.isConfirmed) return;
 
-        // Acá iría el redireccionamiento a MercadoPago, por ahora simulado
-        await updateDoc(doc(db, "tiendas", slug), {
-            estado: "activa",
-            vence: Date.now() + 30 * 24 * 60 * 60 * 1000, // suma 30 días
-        });
+    // Redirige al componente ContratarServicio con los datos prellenados
+    const params = new URLSearchParams({
+        nombreTienda: slug,
+        email: correo,
+        tipo: "renovacion",
+    });
 
-        Swal.fire("✅ Renovada", `Tu tienda "${slug}" fue reactivada`, "success");
+    window.location.href = `/contratar-servicio?${params.toString()}`;
+};
 
-        // Link a tienda
-        window.location.href = `/tienda/${slug}`;
-    };
 
     return (
         <div style={{ padding: "2rem", maxWidth: "500px", margin: "0 auto" }}>

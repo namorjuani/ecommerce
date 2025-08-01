@@ -1,124 +1,83 @@
-import { useState } from "react";
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
-import { db } from "../firebase";
-import Swal from "sweetalert2";
-import { sendWelcomeEmail } from "../services/emailService";
+import { useState, useEffect } from "react";
+import "../pages/css/ContratarServicio.css";
+import { useSearchParams } from "react-router-dom";
 
 export default function ContratarServicio() {
+    const [searchParams] = useSearchParams();
     const [email, setEmail] = useState("");
     const [nombreTienda, setNombreTienda] = useState("");
-    const [verificada, setVerificada] = useState(false);
-    const [esNueva, setEsNueva] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
 
-    const verificarOCrearTienda = async () => {
-        if (!email || !nombreTienda) {
-            return Swal.fire("Faltan datos", "Completá ambos campos", "warning");
-        }
+    useEffect(() => {
+        const tienda = searchParams.get("nombreTienda");
+        const correo = searchParams.get("email");
+        if (tienda) setNombreTienda(tienda);
+        if (correo) setEmail(correo);
+    }, []);
 
-        const tiendaRef = doc(db, "tiendas", nombreTienda);
-        const tiendaSnap = await getDoc(tiendaRef);
-
-        if (tiendaSnap.exists()) {
-            const data = tiendaSnap.data();
-            if (data.adminEmail !== email) {
-                return Swal.fire("Error", "Ese correo no coincide con el dueño de la tienda", "error");
-            }
-
-            if (data.estado === "activa") {
-                return Swal.fire("Ya activa", "Tu tienda ya está activa, no hace falta renovarla", "info");
-            }
-
-            // Tienda suspendida, permitir renovar
-            setEsNueva(false);
-            setVerificada(true);
-            Swal.fire("✅ Verificada", "Podés continuar al pago para reactivar tu tienda", "success");
-        } else {
-            // Tienda nueva
-            setEsNueva(true);
-            setVerificada(true);
-            Swal.fire("✅ Nueva tienda", "Podés continuar al pago para activarla", "success");
-        }
-    };
-
-    const redirigirAMercadoPago = async () => {
-        if (!email || !nombreTienda) return;
-
-        // En este paso simulamos la creación o reactivación antes de pago real
-        const fechaHoy = new Date().toISOString();
-        const diasDePrueba = 30; // ✅ cambiar si querés menos días
-        const fechaVencimiento = new Date(Date.now() + diasDePrueba * 24 * 60 * 60 * 1000).toISOString();
-
-        const tiendaRef = doc(db, "tiendas", nombreTienda);
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError("");
 
         try {
-            if (esNueva) {
-                await setDoc(tiendaRef, {
-                    nombre: nombreTienda,
-                    adminEmail: email,
-                    creadoDesdeLanding: true,
-                    plan: "estandar", // Por ahora solo ese
-                    estado: "activa",
-                    creada: fechaHoy,
-                    vence: fechaVencimiento,
-                });
+            const response = await fetch("https://us-central1-applavaderoartesanal.cloudfunctions.net/crearPreferenciaFunction", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, nombreTienda }),
+            });
 
-                await sendWelcomeEmail(nombreTienda, email, diasDePrueba);
-                console.log("✅ Tienda nueva creada y correo enviado");
-            } else {
-                await updateDoc(tiendaRef, {
-                    estado: "activa",
-                    vence: fechaVencimiento,
-                });
+            const data = await response.json();
+            if (!data.init_point) throw new Error("No se pudo crear la preferencia de pago");
 
-                console.log("✅ Tienda reactivada");
-            }
-
-            // 🔁 Redirigir a pago (en el futuro esto lo hacés después del pago real)
-            const preferenceURL = `https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=TU_ID_DE_PREFERENCIA`;
-            window.location.href = preferenceURL;
-
-        } catch (error) {
-            console.error("❌ Error al crear/actualizar tienda", error);
-            Swal.fire("Error", "Hubo un problema al crear o reactivar la tienda", "error");
+            window.location.href = data.init_point;
+        } catch (err: any) {
+            setError("❌ Ocurrió un error al iniciar el pago. Verificá tus datos.");
+            console.error(err);
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
-        <div style={{ padding: "2rem", maxWidth: "500px", margin: "0 auto" }}>
-            <h2>💳 Activar o renovar mi tienda</h2>
-            <p>Ingresá el nombre de tu tienda y correo. Si es nueva, la activaremos luego del pago.</p>
+        <div className="pago-container">
+            <div className="pago-card">
+                <h2>Activá tu tienda</h2>
+                <p className="pago-descripcion">
+                    Para comenzar a usar tu tienda, aboná la suscripción mensual. Solo necesitás completar tus datos y pagar con MercadoPago.
+                </p>
 
-            <input
-                type="email"
-                placeholder="Correo"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                style={{ width: "100%", marginTop: "1rem", padding: "10px" }}
-            />
+                <form className="pago-form" onSubmit={handleSubmit}>
+                    <label>
+                        Correo electrónico
+                        <input
+                            type="email"
+                            placeholder="tucorreo@ejemplo.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+                    </label>
 
-            <input
-                type="text"
-                placeholder="Nombre de la tienda"
-                value={nombreTienda}
-                onChange={(e) => setNombreTienda(e.target.value)}
-                style={{ width: "100%", marginTop: "1rem", padding: "10px" }}
-            />
+                    <label>
+                        Nombre de la tienda
+                        <input
+                            type="text"
+                            placeholder="mitienda"
+                            value={nombreTienda}
+                            onChange={(e) => setNombreTienda(e.target.value)}
+                            required
+                        />
+                    </label>
 
-            <button
-                onClick={verificarOCrearTienda}
-                style={{ marginTop: "1rem", width: "100%", padding: "10px", backgroundColor: "#2ecc71", color: "#fff", border: "none", borderRadius: "5px" }}
-            >
-                Verificar / Crear tienda
-            </button>
+                    <button type="submit" disabled={loading}>
+                        {loading ? "Redirigiendo..." : "Pagar con MercadoPago"}
+                    </button>
 
-            {verificada && (
-                <button
-                    onClick={redirigirAMercadoPago}
-                    style={{ marginTop: "1rem", width: "100%", padding: "10px", backgroundColor: "#007bff", color: "#fff", border: "none", borderRadius: "5px" }}
-                >
-                    Pagar con Mercado Pago
-                </button>
-            )}
+                    {error && <p className="pago-error">{error}</p>}
+                </form>
+            </div>
         </div>
     );
 }
