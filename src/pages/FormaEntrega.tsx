@@ -209,7 +209,7 @@ export default function FormaEntrega() {
                 <button onClick={vaciarCarrito} style={{ backgroundColor: "red", color: "white", border: "none", padding: "0.5rem 1rem", borderRadius: "6px", cursor: "pointer" }}>
                   Vaciar carrito
                 </button>
-                <button onClick={() => navigate("/")} style={{ marginLeft: "1rem", backgroundColor: "green", color: "white", border: "none", padding: "0.5rem 1rem", borderRadius: "6px", cursor: "pointer" }}>
+                <button onClick={() => navigate(`/tienda/${slug}`)} style={{ marginLeft: "1rem", backgroundColor: "green", color: "white", border: "none", padding: "0.5rem 1rem", borderRadius: "6px", cursor: "pointer" }}>
                   ➕ Seguir comprando
                 </button>
               </div>

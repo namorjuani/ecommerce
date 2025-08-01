@@ -5,23 +5,24 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { useParams } from "react-router-dom";
 
 export interface TiendaData {
-  nombre: string;
+  nombre?: string;
   descripcion: string;
-  imagen: string;
-  logo: string;
+  imagen?: string;
+  logo?: string;
   whatsapp: string;
   textoHero: string;
   colorFondo: string;
   colorBoton: string;
-  linkInstagram: string;
-  linkFacebook: string;
+  linkInstagram?: string;
+  linkFacebook?: string;
   googleMaps: string;
   textoUbicacion: string;
-  categoriaDestacada1: string;
-  categoriaDestacada2: string;
-  alturaBanner: string;
-  posicionBanner: string;
-  tamañoBanner: string;
+  categoriaDestacada1?: string;
+  categoriaDestacada2?: string;
+  alturaBanner?: string;
+  posicionBanner?: string;
+  tamañoBanner?: string;
+  
 }
 
 interface TiendaContextType {

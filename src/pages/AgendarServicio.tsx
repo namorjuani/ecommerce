@@ -16,7 +16,7 @@ interface Servicio {
 export default function AgendarServicio() {
   const { slug, id } = useParams();
   const navigate = useNavigate();
-  const tienda = useTienda();
+  const { tienda } = useTienda();
   const [servicio, setServicio] = useState<Servicio | null>(null);
   const [numeroWhatsapp, setNumeroWhatsapp] = useState<string | null>(null);
 
@@ -60,19 +60,19 @@ export default function AgendarServicio() {
   return (
     <>
       <Header
-        logo={tienda.logo}
-        nombre={tienda.nombre}
-        imagenBanner={tienda.imagen}
-        alturaBanner={tienda.alturaBanner || "100px"}
-        posicionBanner={tienda.posicionBanner || "center"}
-        tamañoBanner={tienda.tamañoBanner || "cover"}
-        categoria1={tienda.categoriaDestacada1}
-        categoria2={tienda.categoriaDestacada2}
-        categoriasExtras={[]}
-        setCategoriaFiltrada={() => {}}
-        linkInstagram={tienda.linkInstagram}
-        linkFacebook={tienda.linkFacebook}
-      />
+  logo={tienda?.logo}
+  nombre={tienda?.nombre}
+  imagenBanner={tienda?.imagen}
+  alturaBanner={tienda?.alturaBanner || "100px"}
+  posicionBanner={tienda?.posicionBanner || "center"}
+  tamañoBanner={tienda?.tamañoBanner || "cover"}
+  categoria1={tienda?.categoriaDestacada1}
+  categoria2={tienda?.categoriaDestacada2}
+  categoriasExtras={[]}
+  linkInstagram={tienda?.linkInstagram}
+  linkFacebook={tienda?.linkFacebook}
+/>
+
 
       <div style={{ maxWidth: "700px", margin: "2rem auto", padding: "1rem" }}>
         <h2>{servicio.nombre}</h2>

@@ -10,18 +10,18 @@ import { db } from "../firebase";
 import { collection, getDocs } from "firebase/firestore";
 
 interface Props {
-  logo: string;
-  nombre: string;
-  imagenBanner: string;
-  alturaBanner: string;
-  posicionBanner: string;
-  tamañoBanner: string;
-  categoria1: string;
-  categoria2: string;
-  categoriasExtras: string[];
+  logo?: string;
+  nombre?: string;
+  imagenBanner?: string;
+  alturaBanner?: string;
+  posicionBanner?: string;
+  tamañoBanner?: string;
+  categoria1?: string;
+  categoria2?: string;
+  categoriasExtras?: string[];
   setCategoriaFiltrada?: (cat: string | null) => void;
-  linkInstagram: string;
-  linkFacebook: string;
+  linkInstagram?: string;
+  linkFacebook?: string;
 }
 
 export default function Header({
@@ -33,8 +33,8 @@ export default function Header({
   tamañoBanner,
   categoria1,
   categoria2,
-  categoriasExtras,
-  setCategoriaFiltrada,
+  categoriasExtras = [],
+  setCategoriaFiltrada = () => {},
   linkInstagram,
   linkFacebook,
 }: Props) {
@@ -118,15 +118,15 @@ export default function Header({
           </span>
 
           <span style={{ cursor: "pointer" }} onClick={() => {
-            navigate(`/tienda/${userId}/buscar/${encodeURIComponent(categoria1)}`);
-            setCategoriaFiltrada?.(categoria1);
+            navigate(`/tienda/${userId}/buscar/${encodeURIComponent(categoria1 || "")}`);
+            setCategoriaFiltrada?.(categoria1 ?? null);
           }}>
             {categoria1}
           </span>
 
           <span style={{ cursor: "pointer" }} onClick={() => {
-            navigate(`/tienda/${userId}/buscar/${encodeURIComponent(categoria2)}`);
-            setCategoriaFiltrada?.(categoria2);
+            navigate(`/tienda/${userId}/buscar/${encodeURIComponent(categoria2 || "")}`);
+            setCategoriaFiltrada?.(categoria2 ?? null);
           }}>
             {categoria2}
           </span>

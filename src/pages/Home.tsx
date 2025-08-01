@@ -139,7 +139,7 @@ export default function Home() {
           fontFamily: tienda?.estilosTexto?.fuenteGeneral || "inherit",
         }}
       >
-        <CategoriasDestacadas />
+        <CategoriasDestacadas setCategoriaFiltrada={() => null} />
 
         <div className="productos">
           <h2 style={{ fontSize: tienda?.estilosTexto?.tamañoH2 || "24px" }}>

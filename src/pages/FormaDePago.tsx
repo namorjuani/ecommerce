@@ -189,15 +189,7 @@ export default function FormaDePago() {
               onChange={() => setFormaPago("mercadopago")}
             /> Mercado Pago
           </label>
-          <label style={{ display: "block", marginTop: "1rem" }}>
-            <input
-              type="radio"
-              name="pago"
-              value="transferencia"
-              checked={formaPago === "transferencia"}
-              onChange={() => setFormaPago("transferencia")}
-            /> Transferencia bancaria
-          </label>
+          <br></br>
           <button
             onClick={finalizar}
             style={{
